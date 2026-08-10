@@ -70,8 +70,9 @@ njega, a `ALLOWED_ORIGINS` je sužen na tačan Vercel URL (ne `*`).
   da li repo treba postati privatan ili primjer treba anonimizirati
   ostaje na Direktoru.
 
-**Status:** Aktivno, potvrđeno (lozinka: DA). Otvoreno pitanje: javnost
-repoa — vidi napomenu iznad.
+**Status:** Aktivno, potvrđeno i TESTIRANO end-to-end (2026-08-10) — Direktor
+je učitao config, generisao raspored i izvezao Excel na živom (Vercel+Railway)
+sajtu, iza lozinke. Otvoreno pitanje: javnost repoa — vidi napomenu iznad.
 
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 

@@ -1,5 +1,19 @@
 # IDSS Timetable — paket za izgradnju web app (radi pod sistemom COMMANDER)
 
+## 🌐 Live (produkcija) — Sprint 03
+
+- **Frontend (wizard):** https://time-table-nu-ten.vercel.app/ — zaštićeno lozinkom
+  (HTTP Basic Auth kroz `frontend/middleware.js`, vidi DECISION_LOG.md DL-002;
+  lozinka NIJE ovdje, pitaj Direktora).
+- **Backend (API):** https://time-table-production-6382.up.railway.app —
+  `ALLOWED_ORIGINS` sužen samo na gornji frontend URL. Backend nema svoju
+  lozinku (svjesna odluka, DL-002 — nije koristan bez wizarda ispred njega).
+  Provjera rada: `/health` → `{"ok":true}`.
+- Hosting: Railway (backend, GitHub auto-deploy) + Vercel (frontend, GitHub
+  auto-deploy) — oba se ažuriraju automatski na svaki push u `main`.
+- End-to-end testirano (2026-08-10): učitavanje config-a, generisanje
+  rasporeda, izvoz Excel — sve rađeno na živom sajtu, potvrdio Direktor.
+
 Predaj ovaj folder svom AI Coding Assistant-u (Gemini). **Prva poruka ACA je uvijek
 COMMANDER `initial_instructions.md`**, pa tek onda ovaj paket. COMMANDER ima prvenstvo.
 

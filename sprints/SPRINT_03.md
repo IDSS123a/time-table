@@ -86,9 +86,47 @@ Sprint NIJE završen dok Direktor LIČNO (ne ACA-ova tvrdnja) ne potvrdi:
 
 ```
 HANDOFF NOTE — Sprint 03
-Completed: [šta je urađeno — live URL-ovi ovdje]
-Not completed: [šta eventualno nije]
-Open risks: [npr. Railway besplatni plan ima ograničenja — koja?]
-Technical debt: [prečice, ako ih ima]
+Completed:
+- Backend deployovan na Railway (Root Directory=backend, koristi postojeći
+  Dockerfile): https://time-table-production-6382.up.railway.app
+  /health -> {"ok":true} potvrđeno i od strane Direktora.
+- Frontend deployovan na Vercel (Root Directory=frontend, Vite preset):
+  https://time-table-nu-ten.vercel.app/
+- VITE_API_URL na Vercelu -> Railway backend URL. End-to-end veza potvrđena
+  (POST /feasibility vraća stvarne poruke iz validators.py).
+- ALLOWED_ORIGINS na Railway sužen sa "*" na tačne Vercel domene (production
+  + git-main alias) — više NIJE otvoren svima.
+- Lozinka na frontendu: NIJE korištena ugrađena Vercel Password Protection
+  (otkriveno tokom sprinta da je to Pro+Advanced Deployment Protection,
+  $150/mj — Direktor odbio trošak). Umjesto toga implementiran besplatan
+  HTTP Basic Auth kroz Vercel Edge Middleware (frontend/middleware.js),
+  lozinka u env varijabli SITE_PASSWORD (fail-closed ako nedostaje). Vidi
+  DECISION_LOG.md DL-002.
+- README.md ažuriran sa oba live URL-a (bez same lozinke).
+- Kompletan tok testiran UŽIVO od strane Direktora: učitaj config -> generiši
+  raspored -> izvezi Excel (raspored.xlsx, 2 lista, validan) — sve na živom
+  sajtu, iza lozinke.
+
+Not completed:
+- Nijedna stavka iz OPSEGA nije preskočena. (Custom domen ostaje van opsega,
+  kako je i planirano.)
+
+Open risks:
+- GitHub repo IDSS123a/time-table je JAVAN — idss_config.example.json (u oba
+  backend/ i frontend/src/) sadrži stvarna imena nastavnika, javno vidljiva
+  nezavisno od frontend lozinke. Direktor je svjesno odlučio da za sada
+  ostane javno (2026-08-10) — otvoreno pitanje za budućnost (DL-002).
+- Railway besplatni plan: nije provjeren tačan mjesečni limit sati/resursa
+  tokom ovog sprinta — pratiti Railway billing/usage stranicu.
+- Basic Auth (browser-ov nativni prozorčić) je manje elegantan UX od
+  namjenske login forme — prihvatljivo za sada, mogao bi se poboljšati
+  kasnije ako Direktor želi ljepši ekran (i dalje besplatno, samo više koda).
+
+Technical debt:
+- Usput otkriven i popravljen prateći bug: frontend/node_modules i
+  backend/__pycache__ su bili greškom komitovani u git (vjerovatno preko
+  GUraj-NA-GITHUB.bat bez .gitignore), što je uzrokovalo "Permission denied"
+  pad Vercel builda. Dodat .gitignore, uklonjeno iz praćenja.
+
 Next sprint: Sprint 04 — Drag-and-drop ručna korekcija + dashboard opterećenja
 ```
