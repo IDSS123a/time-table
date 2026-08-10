@@ -33,6 +33,36 @@ u TypeScript/Next.js.
 
 **Status:** Aktivno, potvrđeno.
 
+## DL-002 — Vercel Password Protection na frontendu (produkcija)
+
+**Datum:** 2026-08-10
+**Odlučio:** Direktor (Davor Mulalić)
+**Kontekst:** Sprint 03 (deployment) — app sadrži stvarne IDSS podatke o
+nastavnicima (imena, raspored, opterećenje). Frontend (Vercel) i backend
+(Railway) postaju dostupni s javnog interneta.
+
+**Odluka:** Frontend MORA imati Vercel Password Protection (ugrađena opcija,
+Project Settings → Deployment Protection). Backend (Railway) ostaje bez
+lozinke — nije praktično koristan bez wizarda ispred njega, a
+`ALLOWED_ORIGINS` je sužen na tačan Vercel URL (ne `*`).
+
+**Posljedice:**
+- Direktor mora unijeti lozinku prilikom svakog otvaranja frontend URL-a
+  (i podijeliti je samo s ovlaštenim licima — ne stavljati je u README.md
+  ili commit history).
+- NAPOMENA (otkriveno prilikom izvršenja Sprinta 03): GitHub repo
+  `IDSS123a/time-table` je JAVAN (public). `idss_config.example.json`
+  (u oba `backend/` i `frontend/src/`) sadrži stvarna imena nastavnika —
+  ta imena su već javno vidljiva preko GitHub-a, NEZAVISNO od Vercel
+  Password Protection na frontendu. Password Protection štiti pristup
+  wizardu/rasporedu, ali NE štiti podatke koji su već u javnom repou.
+  Ovo je zapisano ovdje radi transparentnosti (M-4/M-10); odluka o tome
+  da li repo treba postati privatan ili primjer treba anonimizirati
+  ostaje na Direktoru.
+
+**Status:** Aktivno, potvrđeno (lozinka: DA). Otvoreno pitanje: javnost
+repoa — vidi napomenu iznad.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami
