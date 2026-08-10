@@ -41,12 +41,22 @@ u TypeScript/Next.js.
 nastavnicima (imena, raspored, opterećenje). Frontend (Vercel) i backend
 (Railway) postaju dostupni s javnog interneta.
 
-**Odluka:** Frontend MORA imati Vercel Password Protection (ugrađena opcija,
-Project Settings → Deployment Protection). Backend (Railway) ostaje bez
-lozinke — nije praktično koristan bez wizarda ispred njega, a
-`ALLOWED_ORIGINS` je sužen na tačan Vercel URL (ne `*`).
+**Odluka:** Frontend MORA imati lozinku. Prvobitni plan (ugrađena Vercel
+Password Protection, Project Settings → Deployment Protection) je odbačen
+prilikom izvršenja — ta opcija zahtijeva Pro plan + Advanced Deployment
+Protection ($150/mjesečno), što Direktor NIJE odobrio ("Rekli smo da idemo
+besplatno"). Umjesto toga implementirana je **HTTP Basic Auth kroz Vercel
+Edge Middleware** (`frontend/middleware.js`) — besplatna na svim planovima,
+provjera se dešava na serveru prije slanja bilo kojeg fajla, lozinka je u
+Vercel environment varijabli `SITE_PASSWORD` (ne u kodu/git-u). Backend
+(Railway) ostaje bez lozinke — nije praktično koristan bez wizarda ispred
+njega, a `ALLOWED_ORIGINS` je sužen na tačan Vercel URL (ne `*`).
 
 **Posljedice:**
+- Lozinka se unosi kroz nativni browser prozorčić (HTTP Basic Auth), ne
+  kroz prilagođenu formu — jednostavnije za implementirati, jednako
+  sigurno (server-side provjera), samo drugačiji izgled od Vercel-ove
+  ugrađene opcije.
 - Direktor mora unijeti lozinku prilikom svakog otvaranja frontend URL-a
   (i podijeliti je samo s ovlaštenim licima — ne stavljati je u README.md
   ili commit history).
