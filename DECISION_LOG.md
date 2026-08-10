@@ -127,6 +127,32 @@ sazna goli Railway URL (npr. iz javnog GitHub repoa/README-a).
 - Direktor potvrdio end-to-end kroz wizard (sa tačnom lozinkom): generisan
   raspored, izvezen Excel — normalan tok nije narušen.
 
+## DL-004 — Nacharbeit preraspodjela (Semra → Tamara Mayer, 4. razred) + B/H/S i Englisch jutarnji i za 3. razred
+
+**Datum:** 2026-08-10
+**Odlučio:** Direktor (Davor Mulalić), nakon konsultacije sa Tamarom Mayer
+**Kontekst:** Tamara Mayer može preuzeti TAČNO 2 dodatna Nacharbeit časa.
+
+**Odluka:** U `idss_config.example.json` (backend/ i frontend/src/, identični):
+- Nacharbeit unos za 4. razred (2 časa) prebačen sa "Semra Isanović" na
+  "Tamara Mayer". Njen drugi Nacharbeit unos (3. razred, 6 časova) ostaje
+  nepromijenjen.
+- `morning_core_by_grade` proširen sa `{"B/H/S":[1,2,4],"Englisch":[1,2,4]}`
+  na `{"B/H/S":[1,2,3,4],"Englisch":[1,2,3,4]}` — B/H/S i Englisch sada
+  jutarnji i za 3. razred.
+- SAMO promjena podataka u config fajlu — solver.py/validators.py/
+  exports.py/main.py NETAKNUTI (P-3).
+
+**Provjereno (solve_timetable na ažuriranom configu, 90s limit):**
+- `validate_config`: 0 problema (izvodivo)
+- `solve_timetable`: ok=True, status=FEASIBLE
+- `validate()` nakon solve: 0 grešaka
+- B/H/S i Englisch: 0 pojavljivanja u 6./7. času za razrede 1–4
+- Semra Isanović: 22 časa (bilo 24); Tamara Mayer: 7 časova (bilo 5)
+- Excel izvoz: uspio, validan (2 lista)
+
+**Status:** Aktivno, potvrđeno i testirano.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

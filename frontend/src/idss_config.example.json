@@ -1356,7 +1356,7 @@
     4
    ],
    "subj": "Nacharbeit",
-   "teacher": "Semra Isanović",
+   "teacher": "Tamara Mayer",
    "count": 2,
    "kind": "nach"
   },
@@ -1397,11 +1397,13 @@
   "B/H/S": [
    1,
    2,
+   3,
    4
   ],
   "Englisch": [
    1,
    2,
+   3,
    4
   ]
  }
