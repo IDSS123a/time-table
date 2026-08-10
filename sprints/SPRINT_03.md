@@ -130,3 +130,14 @@ Technical debt:
 
 Next sprint: Sprint 04 — Drag-and-drop ručna korekcija + dashboard opterećenja
 ```
+
+## DOPUNA (post-sprint, 2026-08-10) — sigurnosna rupa koju je prijavio Direktor
+
+Nakon zatvaranja sprinta, Direktor je otkrio da CORS (`ALLOWED_ORIGINS`) štiti
+samo pozive iz browsera — direktan poziv (curl/skripta) na goli Railway URL
+je mogao pozvati `/solve`, `/export/excel`, `/export/report` bez ikakve
+lozinke, potpuno mimo Vercel middleware-a iz ovog sprinta. Popravljeno u
+istoj sesiji: HTTP Basic Auth direktno u `backend/main.py` (svi endpointi
+osim `/health`), lozinka u `BACKEND_PASSWORD` (Railway) + `VITE_BACKEND_PASSWORD`
+(Vercel). Testirano na živom URL-u — vidi `DECISION_LOG.md` DL-003 za pun
+opis, obrazloženje i testove.

@@ -116,10 +116,16 @@ sazna goli Railway URL (npr. iz javnog GitHub repoa/README-a).
   500 na zaštićenim endpointima — namjerno (fail-closed); postaviti
   `BACKEND_PASSWORD` lokalno za razvoj ako treba testirati te pozive.
 
-**Status:** Implementirano i testirano LOKALNO (curl: /health bez lozinke OK,
-zaštićeni endpoint bez lozinke 401, sa pogrešnom 401, sa tačnom 200, bez
-env varijable uopšte 500 fail-closed). Čeka se potvrda na živom (Railway)
-URL-u nakon što Direktor postavi env varijable.
+**Status:** Implementirano i TESTIRANO NA ŽIVOM (Railway) URL-u (2026-08-10):
+- Direktan poziv (curl, bez lozinke) na `/feasibility`, `/solve`,
+  `/export/excel` → 401, mimo browsera/wizarda. Rupa zatvorena.
+- `/health` bez lozinke i dalje 200 (monitoring OK).
+- Usput otkriveno i ispravljeno: `BACKEND_PASSWORD` je prvo greškom dodan
+  u Railway "Shared Variables" umjesto u Variables tog servisa — env
+  varijabla zbog toga nije stizala do aplikacije (fail-closed je ispravno
+  vraćao 500). Nakon premještanja u servisne Variables, radi.
+- Direktor potvrdio end-to-end kroz wizard (sa tačnom lozinkom): generisan
+  raspored, izvezen Excel — normalan tok nije narušen.
 
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
