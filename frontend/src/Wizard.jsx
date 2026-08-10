@@ -70,6 +70,18 @@ function buildConfig(w) {
   // NE izvoditi — korisnik ih označi u Ekranu B. (M-4: ne izmišljati polja.)
   const light_subjects = w.subjects.filter((s) => s.light).map((s) => s.name);
 
+  // morning_core_by_grade = predmeti koji su jutarnji SAMO za navedene razrede
+  // (za razliku od morning_core_subjects, koji je globalno za sve razrede tog predmeta).
+  // config_schema.md: mapa {predmet: [razredi]}. Izvor je s.morningGrades po predmetu
+  // (jedan izvor istine — postavlja ga i loadConfig pri učitavanju i UI u Ekranu B).
+  // Predmet se pojavljuje u mapi samo ako ima bar jedan odabran razred.
+  const morning_core_by_grade = {};
+  for (const s of w.subjects) {
+    if (s.morningGrades && s.morningGrades.length > 0) {
+      morning_core_by_grade[s.name] = s.morningGrades.map(Number);
+    }
+  }
+
   // lessons: samo regular + nach (teachers_fixed ide posebno)
   const lessons = w.lessons.map((L) => ({
     grades: L.grades,
@@ -126,6 +138,7 @@ function buildConfig(w) {
     nach_periods: w.nach_periods.map(Number),
     grades: w.grades.map(Number),
     morning_core_subjects,
+    morning_core_by_grade,
     block_subjects,
     homeroom,
     homeroom_daily_grades: w.homeroom_daily_grades.map(Number),
@@ -161,9 +174,11 @@ function loadConfig(cfg) {
   const pushSubj = (name) => { if (!subjSeen.has(name)) { subjSeen.add(name); subjOrdered.push(name); } };
   (cfg.morning_core_subjects || []).forEach(pushSubj);
   Object.keys(cfg.block_subjects || {}).forEach(pushSubj);
+  Object.keys(cfg.morning_core_by_grade || {}).forEach(pushSubj);
   (cfg.lessons || []).forEach((L) => pushSubj(L.subj));
   (cfg.teachers_fixed || []).forEach((f) => pushSubj(f.subj));
   const lightSet = new Set(cfg.light_subjects || []);
+  const mcbg = cfg.morning_core_by_grade || {};
   w.subjects = subjOrdered.map((name) => {
     const isCore = (cfg.morning_core_subjects || []).includes(name);
     const blockGrades = cfg.block_subjects?.[name] || [];
@@ -173,6 +188,8 @@ function loadConfig(cfg) {
       category: isCore ? "core" : isBlock ? "block" : "regular",
       blockGrades: isBlock ? [...blockGrades] : [],
       light: lightSet.has(name), // lakši predmet (MEKO pravilo — gura se kasnije)
+      // jutarnji SAMO za navedene razrede (config_schema.md: morning_core_by_grade) — round-trip
+      morningGrades: mcbg[name] ? [...mcbg[name]] : [],
     };
   });
 
@@ -455,13 +472,13 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               const cat = document.getElementById("newCat").value;
               const name = el.value.trim();
               if (!name) return;
-              addList("subjects", { name, category: cat, blockGrades: cat === "block" ? [...grades] : [], light: false });
+              addList("subjects", { name, category: cat, blockGrades: cat === "block" ? [...grades] : [], light: false, morningGrades: [] });
               el.value = "";
             }}>+ Dodaj predmet</button>
           </div>
           {w.subjects.length === 0 ? <div className="wiz-empty">Još nema predmeta.</div> : (
             <table className="wiz-table">
-              <thead><tr><th>#</th><th>Predmet</th><th>Kategorija</th><th>Lakši</th><th>Blok razredi (ako blok)</th><th className="act">Akcija</th></tr></thead>
+              <thead><tr><th>#</th><th>Predmet</th><th>Kategorija</th><th>Lakši</th><th>Blok razredi (ako blok)</th><th>Jutarnji samo za razred(e)</th><th className="act">Akcija</th></tr></thead>
               <tbody>
                 {w.subjects.map((s, i) => (
                   <tr key={i}>
@@ -491,12 +508,29 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
                         </div>
                       ) : "—"}
                     </td>
+                    <td>
+                      <div className="wiz-chips" style={{ margin: 0 }}>
+                        {grades.map((g) => (
+                          <button
+                            key={g}
+                            className={`chip ${(s.morningGrades || []).includes(g) ? "" : "off"}`}
+                            title="Jutarnji SAMO u ovom razredu (config_schema.md: morning_core_by_grade)"
+                            onClick={() => {
+                              const mg = s.morningGrades || [];
+                              const has = mg.includes(g);
+                              upList("subjects", i, { morningGrades: has ? mg.filter((x) => x !== g) : [...mg, g].sort((a, b) => a - b) });
+                            }}
+                          >{g}</button>
+                        ))}
+                      </div>
+                    </td>
                     <td className="act"><button className="btn-del" onClick={() => delList("subjects", i)}>Obriši</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
+          <p className="hint">"Jutarnji samo za razred(e)" — označi razrede u kojima OVAJ predmet MORA biti u jutarnjem terminu (npr. B/H/S ili Englisch samo u razredima 1, 2, 4 — ne svuda gdje se predaje). Za predmet koji je jutarnji SVUDA gdje se predaje, koristi kategoriju "Glavni-jutarnji" umjesto ovoga. (config_schema.md: morning_core_by_grade)</p>
 
           <div className="wiz-section-title">Redovni časovi (mobilni — raspoređuju se)</div>
           <p className="hint">Za svaki predmet po razredu: broj sedmičnih časova. Ako je predmet blok, count treba biti 2.</p>
