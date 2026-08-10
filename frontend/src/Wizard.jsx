@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 
 /**
  * SPRINT 02 — Wizard za unos i uređivanje config-a.
@@ -253,8 +253,54 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
   // Wizard interno drži editor-friendly state; App.jsx dobija config via buildConfig.
   // Inicijalno: prazno stanje (NE fiksni IDSS primjer — Sprint 02 kriterij).
   const [w, setW] = useState(() => emptyWizard());
-  const [step, setStep] = useState(0); // 0=A, 1=B, 2=C, 3=D, 4=Provjera
+  const [step, setStep] = useState(0); // 0=A, 1=B, 2=C, 3=D, 4=Provjera, 5=Napredno
   const fileRef = useRef(null);
+  const ADVANCED_STEP = 5;
+
+  // ── SPRINT 04, stavka 5: "Napredno" — ručno uređivanje sirovog config JSON-a.
+  // Rješava ponavljajući problem: svako NOVO polje koje backend dobije (npr.
+  // teacher_constraints, morning_core_by_grade u prošlim sprintovima) wizard
+  // ga tiho gubi dok forma za njega ne postoji. Ovaj ekran radi isto što i
+  // Učitaj config (loadConfig), samo bez fajla — direktno iz textarea.
+  const [advText, setAdvText] = useState("");
+  const [advError, setAdvError] = useState("");
+  const [advDirty, setAdvDirty] = useState(false); // true = korisnik je tu nešto ukucao, ne prepisuj ga automatski
+
+  // Uđeš na Napredno ekran (i nisi mijenjao/la tekst) → osvježi ga trenutnim configom.
+  useEffect(() => {
+    if (step === ADVANCED_STEP && !advDirty) {
+      setAdvText(JSON.stringify(buildConfig(w), null, 2));
+      setAdvError("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  function applyAdvanced() {
+    if (!advText.trim()) return;
+    try {
+      const parsed = JSON.parse(advText);
+      const loaded = loadConfig(parsed);
+      setW(loaded);
+      onConfig(buildConfig(loaded));
+      setAdvError("");
+      setAdvDirty(false);
+    } catch (err) {
+      setAdvError("Nevažeći JSON — izmjena NIJE primijenjena: " + err.message);
+    }
+  }
+
+  function refreshAdvanced() {
+    setAdvText(JSON.stringify(buildConfig(w), null, 2));
+    setAdvError("");
+    setAdvDirty(false);
+  }
+
+  // primijeni Napredno izmjene PRIJE nego što se pređe na drugi korak
+  // (onBlur na textarea pokriva klik van nje, ovo je dodatna garancija)
+  function goToStep(i) {
+    if (step === ADVANCED_STEP) applyAdvanced();
+    setStep(i);
+  }
 
   // ── Ažuriranje wizard state ──
   function up(patch) {
@@ -337,7 +383,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
     return m;
   }, [grades, w.teachers_fixed, w.lessons]);
 
-  const stepNames = ["A · Struktura dana", "B · Nastavnici & predmeti", "C · Razredi & razredništva", "D · Nacharbeit", "Provjera izvodivosti"];
+  const stepNames = ["A · Struktura dana", "B · Nastavnici & predmeti", "C · Razredi & razredništva", "D · Nacharbeit", "Provjera izvodivosti", "Napredno"];
 
   return (
     <div className="wiz">
@@ -351,7 +397,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {/* Step traka */}
       <div className="wiz-steps">
         {stepNames.map((n, i) => (
-          <div key={n} className={`wiz-step ${i === step ? "active" : i < step ? "done" : ""}`} onClick={() => setStep(i)}>
+          <div key={n} className={`wiz-step ${i === step ? "active" : i < step ? "done" : ""}`} onClick={() => goToStep(i)}>
             <span className="num">{i + 1}</span>{n}
           </div>
         ))}
@@ -728,11 +774,36 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
         </div>
       )}
 
+      {/* ── EKRAN ⑥: Napredno — sirovi config JSON ── */}
+      {step === ADVANCED_STEP && (
+        <div className="wiz-panel">
+          <h2>Napredno — sirovi config (JSON)</h2>
+          <p className="hint">
+            Ovdje vidiš TAČAN config koji wizard šalje backendu, kao tekst. Koristi ovo kad
+            wizard forma (Ekrani A–D) još nema polje za nešto što ti treba — uredi tekst direktno
+            i klikni „Primijeni”. Isto kao Učitaj config (.json), samo bez fajla. Ako ne znaš šta
+            je JSON ili ti ovo ne treba, slobodno preskoči ovaj ekran.
+          </p>
+          <textarea
+            className="wiz-json"
+            spellCheck={false}
+            value={advText}
+            onChange={(e) => { setAdvText(e.target.value); setAdvDirty(true); }}
+            onBlur={applyAdvanced}
+          />
+          {advError && <div className="wiz-summary"><span className="bad">✗ {advError}</span></div>}
+          <div className="wiz-nav" style={{ justifyContent: "flex-start", marginTop: 10 }}>
+            <button onClick={applyAdvanced}>✅ Primijeni izmjene</button>
+            <button className="secondary" onClick={refreshAdvanced}>🔄 Osvježi (odbaci moje izmjene, učitaj trenutni config)</button>
+          </div>
+        </div>
+      )}
+
       {/* Navigacija */}
       <div className="wiz-nav">
-        <button className="secondary" disabled={step === 0} onClick={() => setStep(step - 1)}>← Nazad</button>
+        <button className="secondary" disabled={step === 0} onClick={() => goToStep(step - 1)}>← Nazad</button>
         <span style={{ color: "#5a6b7d", fontSize: 13 }}>Korak {step + 1} / {stepNames.length}</span>
-        <button className="secondary" disabled={step === stepNames.length - 1} onClick={() => setStep(step + 1)}>Naprijed →</button>
+        <button className="secondary" disabled={step === stepNames.length - 1} onClick={() => goToStep(step + 1)}>Naprijed →</button>
       </div>
     </div>
   );

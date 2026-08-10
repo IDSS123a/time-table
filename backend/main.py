@@ -56,6 +56,15 @@ class ExportBody(BaseModel):
     config: Dict[str, Any]
     lessons: List[Dict[str, Any]]
 
+class MoveBody(BaseModel):
+    config: Dict[str, Any]
+    lessons: List[Dict[str, Any]]
+    grade: int
+    src_day: str
+    src_period: int
+    dst_day: str
+    dst_period: int
+
 def _feasibility(config: Dict[str, Any]) -> List[str]:
     """FAZA 3 (USTAV): STROGA provjera svakog dijela unosa PRIJE računanja
     (validate_config u validators.py) — ne samo zbir časova po razredu."""
@@ -91,6 +100,32 @@ def solve(body: SolveBody):
         return {"ok": False, "status": res["status"], "lessons": [], "errors": [msg]}
     errs = validate(res["lessons"], body.config)
     return {"ok": len(errs) == 0, "status": res["status"], "lessons": res["lessons"], "errors": errs}
+
+@app.post("/validate-move", dependencies=[Depends(require_auth)])
+def validate_move(body: MoveBody):
+    """SPRINT 04 — tanka omotnica oko POSTOJEĆEG validate() (validators.py),
+    NE nova logika provjere pravila (CONSTITUTION.md P-3). Zamjenjuje termine
+    dva časa ISTOG razreda (ono što je 'prevučeno' i ono što je bilo na
+    ciljnom mjestu), pa pusti validate() da presudi da li je novi raspored
+    ispravan. Van opsega (namjerno): re-optimizacija, pomjeranje blok/fiksnih
+    časova (ti se NE pomjeraju — ostaje isto kao i za sam solver, P-2)."""
+    lessons = [dict(L) for L in body.lessons]  # kopija — original se ne dira
+    src = next((L for L in lessons if L.get("grade") == body.grade
+                and L.get("day") == body.src_day and L.get("period") == body.src_period), None)
+    dst = next((L for L in lessons if L.get("grade") == body.grade
+                and L.get("day") == body.dst_day and L.get("period") == body.dst_period), None)
+    if src is None or dst is None:
+        raise HTTPException(400, "Nema časa na jednom od navedenih termina za taj razred.")
+    if src is dst:
+        return {"ok": True, "lessons": lessons, "errors": []}
+    if src.get("kind") in ("block", "fixed") or dst.get("kind") in ("block", "fixed"):
+        raise HTTPException(400, "Blok i fiksni (honorarni/rezervisani) časovi se ne mogu ručno pomjerati.")
+
+    src["day"], src["period"], dst["day"], dst["period"] = dst["day"], dst["period"], src["day"], src["period"]
+    errs = validate(lessons, body.config)
+    if errs:
+        return {"ok": False, "lessons": body.lessons, "errors": errs}
+    return {"ok": True, "lessons": lessons, "errors": []}
 
 def _tmp(suffix: str) -> str:
     fd, path = tempfile.mkstemp(suffix=suffix); os.close(fd); return path

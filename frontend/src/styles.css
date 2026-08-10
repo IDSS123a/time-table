@@ -73,3 +73,14 @@ td.reserved{background:#fff2f2;color:var(--red)}
 .wiz-badge.regular{background:#eef4fb;color:var(--navy)}
 .wiz-badge.fixed{background:var(--red);color:#fff}
 .file-input{font-size:13px}
+.wiz-json{width:100%;min-height:420px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.5;border:1px solid #cdd7e2;border-radius:6px;padding:12px;background:#0b1e33;color:#dbe9f7;white-space:pre;resize:vertical}
+.wiz-json:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+
+/* ─────────────────────────────────────────────────────────────
+   SPRINT 04 — drag-and-drop korekcija + dashboard opterećenja
+   ───────────────────────────────────────────────────────────── */
+td.draggable{cursor:grab}
+td.draggable:active{cursor:grabbing}
+td.drag-target{background:#fff6d8}
+.dash-table td.hot{color:var(--red);font-weight:bold}
+.move-banner{margin:8px 0}
