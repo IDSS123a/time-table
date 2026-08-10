@@ -5,10 +5,11 @@ Povezuje gotovo jezgro (solver/validators/exports). NE mijenja logiku jezgra.
 Radi pod sistemom COMMANDER — primijeni COMMANDER inženjerska pravila.
 Pokretanje lokalno:  uvicorn main:app --reload --port 8080
 """
-import os, tempfile
-from fastapi import FastAPI, HTTPException
+import os, tempfile, secrets
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
@@ -24,6 +25,28 @@ app.add_middleware(
     allow_origins=os.environ.get("ALLOWED_ORIGINS", "*").split(","),
     allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
+
+# ── SPRINT 03 sigurnosna popravka ───────────────────────────────────────
+# CORS (ALLOWED_ORIGINS) sprečava SAMO pozive iz browsera — direktan poziv
+# (curl, skripta) ga potpuno zaobilazi. Zato: HTTP Basic Auth na SVAKOM
+# endpointu OSIM /health (monitoring/health-check ostaje bez lozinke, po
+# zahtjevu). Lozinka je u env varijabli BACKEND_PASSWORD (Railway) — vidi
+# DECISION_LOG.md DL-003. Username se ne provjerava (frontend šalje prazan,
+# provjerava se samo password). Fail-closed: ako BACKEND_PASSWORD nije
+# podešen, SVI zaštićeni pozivi vraćaju 500 umjesto da prođu bez provjere.
+_security = HTTPBasic()
+
+def require_auth(credentials: HTTPBasicCredentials = Depends(_security)):
+    expected = os.environ.get("BACKEND_PASSWORD")
+    if not expected:
+        raise HTTPException(500, "Server nije podešen: nedostaje BACKEND_PASSWORD environment varijabla.")
+    if not secrets.compare_digest(credentials.password, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Pogrešna lozinka.",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return True
 
 class SolveBody(BaseModel):
     config: Dict[str, Any]
@@ -45,12 +68,12 @@ def _feasibility(config: Dict[str, Any]) -> List[str]:
 def health():
     return {"ok": True}
 
-@app.post("/feasibility")
+@app.post("/feasibility", dependencies=[Depends(require_auth)])
 def feasibility(body: SolveBody):
     problems = _feasibility(body.config)
     return {"ok": len(problems) == 0, "problems": problems}
 
-@app.post("/solve")
+@app.post("/solve", dependencies=[Depends(require_auth)])
 def solve(body: SolveBody):
     feas = _feasibility(body.config)
     if feas:
@@ -72,7 +95,7 @@ def solve(body: SolveBody):
 def _tmp(suffix: str) -> str:
     fd, path = tempfile.mkstemp(suffix=suffix); os.close(fd); return path
 
-@app.post("/export/excel")
+@app.post("/export/excel", dependencies=[Depends(require_auth)])
 def excel(body: ExportBody):
     try:
         p = _tmp(".xlsx"); export_excel(body.lessons, body.config, p)
@@ -81,7 +104,7 @@ def excel(body: ExportBody):
     return FileResponse(p, filename="raspored.xlsx",
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-@app.post("/export/report")
+@app.post("/export/report", dependencies=[Depends(require_auth)])
 def report(body: ExportBody):
     try:
         p = _tmp(".docx"); export_report(body.lessons, body.config, p)

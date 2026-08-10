@@ -74,6 +74,53 @@ njega, a `ALLOWED_ORIGINS` je sužen na tačan Vercel URL (ne `*`).
 je učitao config, generisao raspored i izvezao Excel na živom (Vercel+Railway)
 sajtu, iza lozinke. Otvoreno pitanje: javnost repoa — vidi napomenu iznad.
 
+## DL-003 — HTTP Basic Auth direktno na backendu (main.py)
+
+**Datum:** 2026-08-10
+**Odlučio:** Direktor (Davor Mulalić) — prijavio sigurnosnu rupu nakon Sprint 03
+**Kontekst:** Sprint 03 je zaštitio SAMO frontend (Vercel middleware). Railway
+backend URL je ostao potpuno otvoren — `ALLOWED_ORIGINS` (CORS) sprečava
+samo pozive iz browsera; direktan poziv (curl, skripta) ga u potpunosti
+zaobilazi i mogao je pozvati `/solve`, `/export/excel`, `/export/report`
+bez ikakve lozinke, mimo wizarda.
+
+**Odluka:** Dodan HTTP Basic Auth direktno u `backend/main.py` (FastAPI
+`Depends`) na SVAKI endpoint OSIM `/health` (health-check/monitoring i dalje
+radi bez lozinke). Lozinka: nova env varijabla `BACKEND_PASSWORD` na
+Railway-u (odvojena od Vercel-ovog `SITE_PASSWORD` jer su to dvije odvojene
+platforme/sistemi za env varijable), frontend je šalje automatski kroz
+`VITE_BACKEND_PASSWORD` (Vercel, build-time, isti mehanizam kao
+`VITE_API_URL`). Fail-closed: ako `BACKEND_PASSWORD` nije podešen na
+Railway-u, SVI zaštićeni pozivi vraćaju 500 (server odbija sve, ne propušta
+ništa bez provjere) — testirano lokalno.
+
+**Zašto je OK da vrijednost `BACKEND_PASSWORD` = `SITE_PASSWORD` (preporuka,
+ne obaveza):** Frontend je Vite SPA — SVAKA `VITE_`-prefiksovana varijabla
+se ugrađuje kao čist tekst u JS fajl koji se šalje browseru. To znači da
+`VITE_BACKEND_PASSWORD` NIJE tajna za nekoga ko već ima pristup frontendu
+(dev alati/"view source" je otkrivaju) — ali da bi neko uopšte DOŠAO do tog
+JS fajla, prvo mora proći Vercel Basic Auth (DL-002), za šta mu treba
+`SITE_PASSWORD`. Dakle korištenje iste vrijednosti ne otvara ništa novo:
+ko god zna `SITE_PASSWORD` može otvoriti wizard i legalno raditi sve isto
+preko UI-ja; razlika je samo da tehnički može i direktno pozivati API.
+Prava rupa koju ovo zatvara je neko ko NE zna nijednu lozinku, a slučajno
+sazna goli Railway URL (npr. iz javnog GitHub repoa/README-a).
+
+**Posljedice:**
+- main.py dotaknut (dozvoljeno — P-3 zabranjuje logiku u solver.py/
+  validators.py/exports.py, ne konfiguraciju u main.py).
+- App.jsx fetch pozivi šalju `Authorization: Basic` header automatski.
+- Direktor mora postaviti `BACKEND_PASSWORD` (Railway) i
+  `VITE_BACKEND_PASSWORD` (Vercel) — vidi HANDOFF u `sprints/SPRINT_03.md`.
+- Lokalni razvoj (`uvicorn main:app --reload` bez env varijable) sada vraća
+  500 na zaštićenim endpointima — namjerno (fail-closed); postaviti
+  `BACKEND_PASSWORD` lokalno za razvoj ako treba testirati te pozive.
+
+**Status:** Implementirano i testirano LOKALNO (curl: /health bez lozinke OK,
+zaštićeni endpoint bez lozinke 401, sa pogrešnom 401, sa tačnom 200, bez
+env varijable uopšte 500 fail-closed). Čeka se potvrda na živom (Railway)
+URL-u nakon što Direktor postavi env varijable.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

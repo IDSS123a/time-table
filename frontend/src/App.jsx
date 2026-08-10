@@ -5,6 +5,16 @@ import Wizard from "./Wizard.jsx";
 // URL backenda (FastAPI). Postavi u .env kao VITE_API_URL.
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+// SPRINT 03 sigurnosna popravka: backend (main.py) sada zahtijeva HTTP Basic
+// Auth na svakom endpointu osim /health (CORS ne štiti od direktnih poziva
+// mimo browsera — vidi DECISION_LOG.md DL-003). Lozinka se ovdje ne kuca —
+// dolazi iz VITE_BACKEND_PASSWORD (Vercel env var, ugrađuje se u JS pri
+// build-u, isto kao VITE_API_URL). Username se ne provjerava na backendu.
+const BACKEND_PASSWORD = import.meta.env.VITE_BACKEND_PASSWORD || "";
+const AUTH_HEADERS = BACKEND_PASSWORD
+  ? { Authorization: "Basic " + btoa(":" + BACKEND_PASSWORD) }
+  : {};
+
 // ── Jedna mreža 7×5 za jednu grupu (nastavnik ILI razred) ──────────────
 function Grid({ title, cells, config, mode }) {
   // cells: mapa "day|period" -> lekcija
@@ -102,7 +112,7 @@ export default function App() {
       try {
         const res = await fetch(`${API}/feasibility`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
           body: JSON.stringify({ config }),
         });
         const data = await res.json();
@@ -125,7 +135,7 @@ export default function App() {
     try {
       const res = await fetch(`${API}/solve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
         body: JSON.stringify({ config, time_limit_s: 45 }),
       });
       const data = await res.json();
@@ -141,7 +151,7 @@ export default function App() {
   async function exportFile(kind) {
     const res = await fetch(`${API}/export/${kind}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
       body: JSON.stringify({ config, lessons }),
     });
     const blob = await res.blob();
