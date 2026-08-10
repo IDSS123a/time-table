@@ -1,0 +1,1408 @@
+{
+ "days": [
+  "Mo",
+  "Di",
+  "Mi",
+  "Do",
+  "Fr"
+ ],
+ "periods": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "period_times": {
+  "1": "08:00–08:45",
+  "2": "09:05–09:50",
+  "3": "09:55–10:40",
+  "4": "10:45–11:30",
+  "5": "12:15–13:00",
+  "6": "13:05–13:50",
+  "7": "13:55–14:40"
+ },
+ "morning_periods": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "nach_periods": [
+  6,
+  7
+ ],
+ "grades": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "morning_core_subjects": [
+  "Mathematik",
+  "Deutsch"
+ ],
+ "block_subjects": {
+  "Sport": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "Kunst": [
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ "homeroom": {
+  "1": "Amina Ibrahimović Bojić",
+  "2": "Selma Mujanović",
+  "3": "Semra Isanović",
+  "4": "Nejla Dugopoljac Hamzagić",
+  "5": "Anes Memić",
+  "6": "Hena Mušanović",
+  "7": "Nikolina Todorović",
+  "8": "Amra Franca",
+  "9": "Victoria Bartz"
+ },
+ "homeroom_daily_grades": [
+  1,
+  2,
+  3,
+  4,
+  6,
+  7
+ ],
+ "light_subjects": [
+  "Kunst",
+  "Ethik",
+  "Musik"
+ ],
+ "objective_weights": {
+  "compactness": 1,
+  "balance": 2,
+  "light_late": 1
+ },
+ "teachers_fixed": [
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 4,
+   "day": "Di",
+   "period": 4
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 5,
+   "day": "Di",
+   "period": 5
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 9,
+   "day": "Mi",
+   "period": 1
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 1,
+   "day": "Mi",
+   "period": 2
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 3,
+   "day": "Mi",
+   "period": 5
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 2,
+   "day": "Mi",
+   "period": 6
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 7,
+   "day": "Mi",
+   "period": 7
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 6,
+   "day": "Do",
+   "period": 6
+  },
+  {
+   "teacher": "Aras Samardžija",
+   "subj": "Musik",
+   "grade": 8,
+   "day": "Do",
+   "period": 7
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 7,
+   "day": "Mo",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 8,
+   "day": "Mo",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 7,
+   "day": "Mo",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 8,
+   "day": "Mo",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 3,
+   "day": "Di",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 4,
+   "day": "Di",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 3,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 4,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 5,
+   "day": "Mi",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 6,
+   "day": "Mi",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 5,
+   "day": "Mi",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 6,
+   "day": "Mi",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 1,
+   "day": "Do",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 2,
+   "day": "Do",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 1,
+   "day": "Do",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 2,
+   "day": "Do",
+   "period": 6
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 9,
+   "day": "Fr",
+   "period": 5
+  },
+  {
+   "teacher": "Anes Memić",
+   "subj": "Sport",
+   "grade": 9,
+   "day": "Fr",
+   "period": 6
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 9,
+   "day": "Mo",
+   "period": 7
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 6,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 9,
+   "day": "Do",
+   "period": 1
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 8,
+   "day": "Do",
+   "period": 2
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 7,
+   "day": "Do",
+   "period": 4
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 6,
+   "day": "Do",
+   "period": 5
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 8,
+   "day": "Fr",
+   "period": 2
+  },
+  {
+   "teacher": "REZERVISANO – Französisch",
+   "subj": "Französisch",
+   "grade": 7,
+   "day": "Fr",
+   "period": 5
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 7,
+   "day": "Mo",
+   "period": 1
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 6,
+   "day": "Mo",
+   "period": 2
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Informatik",
+   "grade": 6,
+   "day": "Mo",
+   "period": 3
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Informatik",
+   "grade": 5,
+   "day": "Mo",
+   "period": 4
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 6,
+   "day": "Di",
+   "period": 1
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 7,
+   "day": "Di",
+   "period": 2
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 7,
+   "day": "Mi",
+   "period": 1
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 6,
+   "day": "Mi",
+   "period": 2
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 6,
+   "day": "Do",
+   "period": 1
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 7,
+   "day": "Do",
+   "period": 2
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Informatik",
+   "grade": 7,
+   "day": "Do",
+   "period": 3
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 7,
+   "day": "Fr",
+   "period": 1
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Mathematik",
+   "grade": 6,
+   "day": "Fr",
+   "period": 2
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Informatik",
+   "grade": 9,
+   "day": "Fr",
+   "period": 3
+  },
+  {
+   "teacher": "Šemsija Kulenović",
+   "subj": "Informatik",
+   "grade": 8,
+   "day": "Fr",
+   "period": 4
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 5,
+   "day": "Mo",
+   "period": 1
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 9,
+   "day": "Mo",
+   "period": 2
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 8,
+   "day": "Mo",
+   "period": 3
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 8,
+   "day": "Di",
+   "period": 1
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 5,
+   "day": "Di",
+   "period": 2
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 9,
+   "day": "Di",
+   "period": 3
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 5,
+   "day": "Mi",
+   "period": 1
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 9,
+   "day": "Mi",
+   "period": 2
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 8,
+   "day": "Mi",
+   "period": 3
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 8,
+   "day": "Do",
+   "period": 1
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 5,
+   "day": "Do",
+   "period": 2
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Grundtechniken",
+   "grade": 5,
+   "day": "Do",
+   "period": 3
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 9,
+   "day": "Fr",
+   "period": 1
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Mathematik",
+   "grade": 5,
+   "day": "Fr",
+   "period": 2
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Technik",
+   "grade": 8,
+   "day": "Fr",
+   "period": 3
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Technik",
+   "grade": 9,
+   "day": "Fr",
+   "period": 4
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Technik",
+   "grade": 6,
+   "day": "Fr",
+   "period": 5
+  },
+  {
+   "teacher": "Haris Hamzić",
+   "subj": "Technik",
+   "grade": 7,
+   "day": "Fr",
+   "period": 6
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 6,
+   "day": "Di",
+   "period": 4
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 7,
+   "day": "Di",
+   "period": 5
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 9,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 6,
+   "day": "Mi",
+   "period": 3
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 7,
+   "day": "Mi",
+   "period": 4
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 8,
+   "day": "Mi",
+   "period": 5
+  },
+  {
+   "teacher": "Alena Batistuti",
+   "subj": "Biologie",
+   "grade": 9,
+   "day": "Mi",
+   "period": 6
+  },
+  {
+   "teacher": "Melisa Tvrtković",
+   "subj": "Chemie",
+   "grade": 8,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "Melisa Tvrtković",
+   "subj": "Chemie",
+   "grade": 9,
+   "day": "Di",
+   "period": 7
+  },
+  {
+   "teacher": "Melisa Tvrtković",
+   "subj": "Chemie",
+   "grade": 8,
+   "day": "Do",
+   "period": 4
+  },
+  {
+   "teacher": "Melisa Tvrtković",
+   "subj": "Chemie",
+   "grade": 9,
+   "day": "Do",
+   "period": 5
+  },
+  {
+   "teacher": "REZERVISANO – Physik",
+   "subj": "Physik",
+   "grade": 8,
+   "day": "Mo",
+   "period": 4
+  },
+  {
+   "teacher": "REZERVISANO – Physik",
+   "subj": "Physik",
+   "grade": 9,
+   "day": "Mo",
+   "period": 6
+  },
+  {
+   "teacher": "REZERVISANO – Physik",
+   "subj": "Physik",
+   "grade": 7,
+   "day": "Mo",
+   "period": 7
+  },
+  {
+   "teacher": "REZERVISANO – Physik",
+   "subj": "Physik",
+   "grade": 9,
+   "day": "Mi",
+   "period": 5
+  },
+  {
+   "teacher": "REZERVISANO – Physik",
+   "subj": "Physik",
+   "grade": 8,
+   "day": "Mi",
+   "period": 6
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 9,
+   "day": "Mo",
+   "period": 3
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 6,
+   "day": "Mo",
+   "period": 6
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 8,
+   "day": "Mo",
+   "period": 7
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 9,
+   "day": "Di",
+   "period": 5
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 7,
+   "day": "Di",
+   "period": 6
+  },
+  {
+   "teacher": "Dina Gusinac",
+   "subj": "Geschichte",
+   "grade": 8,
+   "day": "Di",
+   "period": 7
+  }
+ ],
+ "lessons": [
+  {
+   "grades": [
+    4
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amina Ibrahimović Bojić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amina Ibrahimović Bojić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amra Franca",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amina Ibrahimović Bojić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amina Ibrahimović Bojić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Englisch",
+   "teacher": "Nejra Ljubunčić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Englisch",
+   "teacher": "Nejra Ljubunčić",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Englisch",
+   "teacher": "Nejra Ljubunčić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Englisch",
+   "teacher": "Nejra Ljubunčić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Mathematik",
+   "teacher": "Nejla Dugopoljac Hamzagić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Mathematik",
+   "teacher": "Nejla Dugopoljac Hamzagić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Mathematik",
+   "teacher": "Nejla Dugopoljac Hamzagić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Mathematik",
+   "teacher": "Nejla Dugopoljac Hamzagić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Deutsch",
+   "teacher": "Selma Mujanović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Sachkunde",
+   "teacher": "Selma Mujanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Kunst",
+   "teacher": "Selma Mujanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Umweltkunde",
+   "teacher": "Selma Mujanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Kunst",
+   "teacher": "Melisa Babić",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Ethik",
+   "teacher": "Melisa Babić",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Ethik",
+   "teacher": "Melisa Babić",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Ethik",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "Ethik",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Ethik",
+   "teacher": "Melisa Babić",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Ethik",
+   "teacher": "Melisa Babić",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Ethik",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "Ethik",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Ethik",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Deutsch",
+   "teacher": "Semra Isanović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Deutsch",
+   "teacher": "Semra Isanović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Sachkunde",
+   "teacher": "Semra Isanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Umweltkunde",
+   "teacher": "Semra Isanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Kunst",
+   "teacher": "Semra Isanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Deutsch",
+   "teacher": "Nikolina Todorović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Gesellschaft",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Sachkunde",
+   "teacher": "Hena Mušanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Umweltkunde",
+   "teacher": "Hena Mušanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Naturkunde",
+   "teacher": "Hena Mušanović",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Lebenskunde",
+   "teacher": "Hena Mušanović",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Deutsch",
+   "teacher": "Melisa Babić",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Umweltkunde",
+   "teacher": "Melisa Babić",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Kunst",
+   "teacher": "Melisa Babić",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Sachkunde",
+   "teacher": "Melisa Babić",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "Kunst",
+   "teacher": "Tamara Mayer",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Kunst",
+   "teacher": "Tamara Mayer",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Kunst",
+   "teacher": "Tamara Mayer",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Kunst",
+   "teacher": "Tamara Mayer",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "Kunst",
+   "teacher": "Tamara Mayer",
+   "count": 1,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "Englisch",
+   "teacher": "Victoria Bartz",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "Englisch",
+   "teacher": "Victoria Bartz",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Englisch",
+   "teacher": "Victoria Bartz",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Englisch",
+   "teacher": "Victoria Bartz",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Englisch",
+   "teacher": "Victoria Bartz",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amra Franca",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amra Franca",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amra Franca",
+   "count": 3,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "B/H/S",
+   "teacher": "Amra Franca",
+   "count": 4,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "Deutsch",
+   "teacher": "Nikolina Todorović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Deutsch",
+   "teacher": "Nikolina Todorović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "Deutsch",
+   "teacher": "Nikolina Todorović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Deutsch",
+   "teacher": "Hena Mušanović",
+   "count": 5,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    9
+   ],
+   "subj": "Erdkunde",
+   "teacher": "Sunita Kaikčija",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Erdkunde",
+   "teacher": "Sunita Kaikčija",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Erdkunde",
+   "teacher": "Sunita Kaikčija",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    8
+   ],
+   "subj": "Erdkunde",
+   "teacher": "Sunita Kaikčija",
+   "count": 2,
+   "kind": "regular"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Amina Ibrahimović Bojić",
+   "count": 2,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    1
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Melisa Babić",
+   "count": 5,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    2
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Selma Mujanović",
+   "count": 7,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    3
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Semra Isanović",
+   "count": 6,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Nejla Dugopoljac Hamzagić",
+   "count": 4,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    4
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Semra Isanović",
+   "count": 2,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    5
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Hena Mušanović",
+   "count": 5,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    6
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Hena Mušanović",
+   "count": 2,
+   "kind": "nach"
+  },
+  {
+   "grades": [
+    7
+   ],
+   "subj": "Nacharbeit",
+   "teacher": "Nikolina Todorović",
+   "count": 2,
+   "kind": "nach"
+  }
+ ],
+ "teacher_constraints": {
+  "Victoria Bartz": {
+   "max_period": 6
+  }
+ },
+ "morning_core_by_grade": {
+  "B/H/S": [
+   1,
+   2,
+   4
+  ],
+  "Englisch": [
+   1,
+   2,
+   4
+  ]
+ }
+}

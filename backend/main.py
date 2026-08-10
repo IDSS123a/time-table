@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+"""
+IDSS Timetable — FastAPI backend.
+Povezuje gotovo jezgro (solver/validators/exports). NE mijenja logiku jezgra.
+Radi pod sistemom COMMANDER — primijeni COMMANDER inženjerska pravila.
+Pokretanje lokalno:  uvicorn main:app --reload --port 8080
+"""
+import os, tempfile
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+
+from solver import solve_timetable
+from validators import validate, validate_config
+from exports import export_excel, export_report
+
+app = FastAPI(title="IDSS Timetable API", version="1.0")
+
+# CORS: za razvoj dozvoli sve; u produkciji suzi na URL frontenda.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.environ.get("ALLOWED_ORIGINS", "*").split(","),
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
+)
+
+class SolveBody(BaseModel):
+    config: Dict[str, Any]
+    time_limit_s: Optional[int] = 60
+
+class ExportBody(BaseModel):
+    config: Dict[str, Any]
+    lessons: List[Dict[str, Any]]
+
+def _feasibility(config: Dict[str, Any]) -> List[str]:
+    """FAZA 3 (USTAV): STROGA provjera svakog dijela unosa PRIJE računanja
+    (validate_config u validators.py) — ne samo zbir časova po razredu."""
+    try:
+        return validate_config(config)
+    except Exception as e:
+        return [f"Neočekivana greška prilikom provjere konfiguracije: {e}"]
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.post("/feasibility")
+def feasibility(body: SolveBody):
+    problems = _feasibility(body.config)
+    return {"ok": len(problems) == 0, "problems": problems}
+
+@app.post("/solve")
+def solve(body: SolveBody):
+    feas = _feasibility(body.config)
+    if feas:
+        return {"ok": False, "status": "INFEASIBLE_INPUT", "lessons": [], "errors": feas}
+    res = solve_timetable(body.config, body.time_limit_s or 60)
+    if not res["ok"]:
+        if res["status"] == "INFEASIBLE":
+            msg = ("Rješavač je dokazao da traženi raspored NIJE moguć uz data ograničenja "
+                   "(ne pomaže duže vrijeme čekanja) — provjeri da li su neka pravila u koliziji, "
+                   "npr. teacher_constraints (max_period) u kombinaciji s brojem Nacharbeit ili "
+                   "drugih časova za tog nastavnika.")
+        else:
+            msg = ("Rješavač nije stigao naći rješenje u zadatom vremenu (status: "
+                   f"{res['status']}) — pokušaj s dužim vremenskim limitom.")
+        return {"ok": False, "status": res["status"], "lessons": [], "errors": [msg]}
+    errs = validate(res["lessons"], body.config)
+    return {"ok": len(errs) == 0, "status": res["status"], "lessons": res["lessons"], "errors": errs}
+
+def _tmp(suffix: str) -> str:
+    fd, path = tempfile.mkstemp(suffix=suffix); os.close(fd); return path
+
+@app.post("/export/excel")
+def excel(body: ExportBody):
+    try:
+        p = _tmp(".xlsx"); export_excel(body.lessons, body.config, p)
+    except Exception as e:
+        raise HTTPException(500, f"Excel izvoz nije uspio: {e}")
+    return FileResponse(p, filename="raspored.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@app.post("/export/report")
+def report(body: ExportBody):
+    try:
+        p = _tmp(".docx"); export_report(body.lessons, body.config, p)
+    except Exception as e:
+        raise HTTPException(500, f"Izvještaj nije uspio: {e}")
+    return FileResponse(p, filename="izvjestaj.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")

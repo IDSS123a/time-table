@@ -1,0 +1,75 @@
+:root{
+  --navy:#035EA1; --blue:#08ABE6; --yellow:#FFCB29; --red:#E8262C; --black:#000;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--black);background:#f5f7fa}
+header{background:var(--navy);color:#fff;padding:16px 24px}
+header h1{margin:0;font-size:20px}
+header small{opacity:.85}
+main{padding:20px 24px;max-width:1200px;margin:0 auto}
+.controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap}
+button{background:var(--navy);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer}
+button.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.err{background:#fdecec;border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:6px;margin:12px 0}
+.block{margin:22px 0;border:1px solid #dfe6ee;border-radius:8px;overflow:hidden;background:#fff}
+.block h3{margin:0;background:var(--navy);color:#fff;padding:10px 14px;font-size:15px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #cdd7e2;padding:6px 8px;text-align:center;font-size:12px;height:44px;vertical-align:middle}
+th{background:var(--blue);color:#fff}
+td.time{background:#eef4fb;font-weight:bold;white-space:nowrap}
+td .sub{font-weight:bold}
+td .who{color:#456;font-size:11px}
+td.nach{background:#eaf6ff}
+td.reserved{background:#fff2f2;color:var(--red)}
+
+/* ─────────────────────────────────────────────────────────────
+   SPRINT 02 — Wizard ekrani (P-4 paleta, ne izmišljati nove boje)
+   Koristi istu --navy/--blue/--yellow/--red/--black varijable iz :root.
+   ───────────────────────────────────────────────────────────── */
+.wiz{max-width:980px;margin:0 auto}
+.wiz-steps{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 22px;border-bottom:2px solid var(--blue);padding-bottom:10px}
+.wiz-step{padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:14px;border:1px solid transparent;background:#fff;color:var(--navy)}
+.wiz-step.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.wiz-step.done{background:#eef4fb;color:var(--navy);border-color:var(--blue)}
+.wiz-step .num{display:inline-block;width:20px;height:20px;line-height:20px;border-radius:50%;background:var(--blue);color:#fff;text-align:center;font-size:12px;margin-right:6px}
+.wiz-step.active .num{background:var(--yellow);color:var(--black)}
+.wiz-panel{background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:18px 22px;margin-bottom:18px}
+.wiz-panel h2{margin:0 0 4px;color:var(--navy);font-size:18px}
+.wiz-panel .hint{color:#5a6b7d;font-size:13px;margin:0 0 16px}
+.wiz-field{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.wiz-field label{min-width:200px;font-size:13px;color:var(--black);font-weight:bold}
+.wiz-field input[type=text],.wiz-field input[type=number],.wiz-field select,.wiz-field textarea{
+  border:1px solid #cdd7e2;border-radius:5px;padding:7px 10px;font-size:14px;font-family:inherit;flex:1;min-width:160px;background:#fff;color:var(--black)}
+.wiz-field input:focus,.wiz-field select:focus,.wiz-field textarea:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+.wiz-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{background:var(--blue);color:#fff;border:0;border-radius:14px;padding:4px 12px;font-size:12px;cursor:pointer}
+.chip.off{background:#eef4fb;color:var(--navy);border:1px solid #cdd7e2}
+.chip.danger{background:var(--red)}
+.wiz-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.wiz-table th{background:var(--navy);color:#fff;padding:7px 9px;text-align:left;font-size:12px}
+.wiz-table td{border:1px solid #e2e9f0;padding:6px 9px;vertical-align:middle}
+.wiz-table tr:nth-child(even){background:#f6f9fc}
+.wiz-table .act{white-space:nowrap;text-align:center}
+.wiz-table .act button{padding:4px 9px;font-size:12px;margin:0 2px}
+.btn-del{background:var(--red)}
+.btn-add{background:var(--yellow);color:var(--black)}
+.wiz-nav{display:flex;justify-content:space-between;align-items:center;margin:18px 0;flex-wrap:wrap;gap:10px}
+.wiz-summary{background:#eef4fb;border-left:4px solid var(--navy);padding:12px 16px;border-radius:5px;font-size:13px;margin:14px 0}
+.wiz-summary b{color:var(--navy)}
+.wiz-summary .ok{color:#1a7a3a;font-weight:bold}
+.wiz-summary .bad{color:var(--red);font-weight:bold}
+.wiz- feaslist{margin:6px 0;padding-left:20px}
+.wiz-feaslist li{color:var(--red);margin:3px 0;font-size:13px}
+.wiz-empty{color:#8a98a8;font-style:italic;padding:18px;text-align:center}
+.wiz-section-title{color:var(--navy);font-size:14px;font-weight:bold;margin:18px 0 6px;border-bottom:1px solid #e2e9f0;padding-bottom:4px}
+.wiz-inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:10px 0;padding:12px;background:#f6f9fc;border:1px dashed #cdd7e2;border-radius:6px}
+.wiz-inline-form .f{display:flex;flex-direction:column;gap:3px}
+.wiz-inline-form .f label{font-size:11px;color:#5a6b7d;font-weight:normal;min-width:auto}
+.wiz-inline-form .f input,.wiz-inline-form .f select{min-width:120px;width:auto}
+.wiz-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;margin-left:6px}
+.wiz-badge.core{background:var(--yellow);color:var(--black)}
+.wiz-badge.block{background:var(--navy);color:#fff}
+.wiz-badge.regular{background:#eef4fb;color:var(--navy)}
+.wiz-badge.fixed{background:var(--red);color:#fff}
+.file-input{font-size:13px}
