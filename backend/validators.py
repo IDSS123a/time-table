@@ -152,12 +152,21 @@ def validate(lessons, config):
         for d in D:
             for p in P:
                 if occ[(g,d,p)]==0: errs.append(f"Razred {g} prazan termin {d}{p}")
-    # teacher: bez preklapanja (spojeni isti-nastavnik-isti-predmet dozvoljen)
+    # teacher: bez preklapanja (spojeni ISTI-nastavnik-ISTI-predmet-ISTI-fiksni-blok dozvoljen)
     tt=collections.defaultdict(list)
     for L in lessons: tt[(L["teacher"],L["day"],L["period"])].append(L)
     for k,v in tt.items():
         if len(v)>1 and not str(k[0]).startswith("REZERVISANO"):
-            if not (len(set(x["subj"] for x in v))==1):  # spojeni čas istog predmeta = OK
+            same_subj = len(set(x["subj"] for x in v))==1
+            # Izuzetak (spojeni čas, npr. Sport za dva razreda) vrijedi SAMO ako su
+            # SVI sudionici 'fixed' (unaprijed zadati honorarni termin) — takvi spojevi
+            # su namjerno deklarisani u teachers_fixed, ne nastaju slučajno. Za 'regular'/
+            # 'nach'/'block' časove isti naziv predmeta NIJE dovoljan izgovor: dva
+            # različita, nepovezana razreda s istim nastavnikom u istom terminu je
+            # stvaran sudar (npr. ručno pomjeranje preko /validate-move), bez obzira
+            # dijele li slučajno naziv predmeta.
+            all_fixed = all(x.get("kind")=="fixed" for x in v)
+            if not (same_subj and all_fixed):
                 errs.append(f"Nastavnik {k[0]} preklapanje {k[1]}{k[2]}: {[ (x['subj'],x['grade']) for x in v]}")
     # Glavni/jutarnji predmeti (globalno ili po razredu) u jutarnjim periodima
     for L in lessons:
