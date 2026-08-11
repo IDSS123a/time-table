@@ -21,7 +21,12 @@ const AUTH_HEADERS = BACKEND_PASSWORD
 // se NE prevlače (isto pravilo kao solver — P-2, honorarni/fiksni se ne
 // pomjeraju). onCellDrop/onCellDragStart su undefined kad drag-and-drop
 // nije aktivan (prikaz po nastavniku, ili nema generisanog rasporeda).
-function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop }) {
+// pendingKeys: Set "day|period" časova koji čekaju odgovor backenda (SPRINT 04
+// loader popravka) — prikazani providno dok traje /validate-move poziv.
+// disableDrag: true dok BILO KOJI drag-and-drop poziv već traje (bilo gdje u
+// aplikaciji) — sprečava pokretanje drugog prevlačenja prije nego prvi završi
+// (isti princip kao disabled dugme, primijenjen na drag gestove).
+function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop, pendingKeys, disableDrag }) {
   // cells: mapa "day|period" -> lekcija
   const days = config.days;
   const periods = config.periods;
@@ -52,28 +57,36 @@ function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop }) {
                 const isNach = L && L.subj === "Nacharbeit";
                 const isRes = L && String(L.teacher).startsWith("REZERVISANO");
                 const isFixedOrBlock = L && (L.kind === "block" || L.kind === "fixed");
-                const canDrag = dndOn && L && !isFixedOrBlock;
                 const key = `${d}|${p}`;
+                const isPending = !!(pendingKeys && pendingKeys.has(key));
+                const canDrag = dndOn && !disableDrag && L && !isFixedOrBlock;
                 const classes = [
                   isRes ? "reserved" : isNach ? "nach" : "",
                   canDrag ? "draggable" : "",
                   dndOn && overKey === key ? "drag-target" : "",
+                  isPending ? "cell-pending" : "",
                 ].filter(Boolean).join(" ");
                 return (
                   <td
                     key={d}
                     className={classes}
                     draggable={canDrag}
-                    title={canDrag ? "Prevuci u drugi termin istog razreda" : isFixedOrBlock ? "Blok/fiksni čas se ne može ručno pomjerati" : undefined}
+                    title={
+                      isPending ? "Provjeravam pomjeranje…"
+                      : canDrag ? "Prevuci u drugi termin istog razreda"
+                      : isFixedOrBlock ? "Blok/fiksni čas se ne može ručno pomjerati"
+                      : undefined
+                    }
                     onDragStart={canDrag ? () => onCellDragStart(d, p) : undefined}
-                    onDragOver={dndOn ? (e) => { e.preventDefault(); setOverKey(key); } : undefined}
+                    onDragOver={dndOn && !disableDrag ? (e) => { e.preventDefault(); setOverKey(key); } : undefined}
                     onDragLeave={dndOn ? () => setOverKey((k) => (k === key ? null : k)) : undefined}
                     onDrop={
-                      dndOn
+                      dndOn && !disableDrag
                         ? (e) => { e.preventDefault(); setOverKey(null); onCellDrop(d, p); }
                         : undefined
                     }
                   >
+                    {isPending && <span className="cell-spinner" aria-label="Učitavam…">⏳</span>}
                     {L ? (
                       <>
                         <div className="sub">
@@ -207,7 +220,16 @@ export default function App() {
   // dragSrc: {grade, day, period} — čas koji se trenutno prevlači, ili null.
   const [dragSrc, setDragSrc] = useState(null);
   const [moveError, setMoveError] = useState("");
-  const [moving, setMoving] = useState(false);
+  // pendingMove: {grade, src:{day,period}, dst:{day,period}} dok /validate-move
+  // poziv traje, inače null — koristi se i kao "moving" indikator (loader popravka)
+  // i za tačno koje dvije ćelije treba providno prikazati.
+  const [pendingMove, setPendingMove] = useState(null);
+  const moving = !!pendingMove;
+
+  // SPRINT 04 loader popravka: dok se izvozi Excel/izvještaj, dugme koje je
+  // kliknuto pokazuje "Izvozim…" i onemogućeno je (samo TO dugme, ne oba).
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingReport, setExportingReport] = useState(false);
 
   // SPRINT 02: provjera izvodivosti (Faza 3) — drži rezultat, zove /feasibility.
   const [feasibility, setFeasibility] = useState(null);
@@ -235,7 +257,10 @@ export default function App() {
     return () => clearTimeout(t);
   }, [config]);
 
-  const canGenerate = feasibility?.ok === true && !loading;
+  // SPRINT 04 loader popravka: ne dozvoli "Generiši" dok traje SVJEŽA provjera
+  // izvodivosti (feasibilityLoading) — inače dugme može ostati klikabilno na
+  // osnovu ZASTARJELOG feasibility.ok dok se nova provjera još ne zna.
+  const canGenerate = feasibility?.ok === true && !loading && !feasibilityLoading;
 
   async function generate() {
     setLoading(true);
@@ -258,18 +283,31 @@ export default function App() {
   }
 
   async function exportFile(kind) {
-    const res = await fetch(`${API}/export/${kind}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
-      body: JSON.stringify({ config, lessons }),
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = kind === "excel" ? "raspored.xlsx" : "izvjestaj.docx";
-    a.click();
-    URL.revokeObjectURL(url);
+    const setBusy = kind === "excel" ? setExportingExcel : setExportingReport;
+    setBusy(true);
+    setApiError("");
+    try {
+      const res = await fetch(`${API}/export/${kind}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+        body: JSON.stringify({ config, lessons }),
+      });
+      if (!res.ok) {
+        setApiError(`Izvoz nije uspio (HTTP ${res.status}).`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = kind === "excel" ? "raspored.xlsx" : "izvjestaj.docx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setApiError(`Izvoz nije uspio — ne mogu se povezati s backendom (${e}).`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   // ── SPRINT 04: ručna korekcija (drag-and-drop) ──────────────────────
@@ -279,6 +317,7 @@ export default function App() {
   // jer `lessons` state nikad nije optimistički promijenjen) + prikaži
   // JASNU poruku zašto (direktno iz validate()).
   async function handleDrop(grade, day, period) {
+    if (pendingMove) return; // već traje jedan poziv — ignoriši dok ne završi (isto kao disabled dugme)
     const src = dragSrc;
     setDragSrc(null);
     if (!src) return;
@@ -288,7 +327,7 @@ export default function App() {
     }
     if (src.day === day && src.period === period) return; // ispušteno na isto mjesto — ništa se ne dešava
 
-    setMoving(true);
+    setPendingMove({ grade, src, dst: { day, period } });
     setMoveError("");
     try {
       const res = await fetch(`${API}/validate-move`, {
@@ -311,7 +350,7 @@ export default function App() {
     } catch (e) {
       setMoveError(`Ne mogu se povezati s backendom za provjeru pomjeranja (${e}). Čas je vraćen na staro mjesto.`);
     } finally {
-      setMoving(false);
+      setPendingMove(null);
     }
   }
 
@@ -331,6 +370,19 @@ export default function App() {
       ? Object.keys(groups).sort()
       : config.grades.filter((x) => groups[x]);
 
+  // SPRINT 04 loader popravka: koje dvije ćelije (u KOM razredu) treba
+  // providno prikazati dok /validate-move traje.
+  const pendingCells = useMemo(() => {
+    if (!pendingMove) return null;
+    return {
+      grade: pendingMove.grade,
+      keys: new Set([
+        `${pendingMove.src.day}|${pendingMove.src.period}`,
+        `${pendingMove.dst.day}|${pendingMove.dst.period}`,
+      ]),
+    };
+  }, [pendingMove]);
+
   return (
     <>
       <header>
@@ -348,9 +400,22 @@ export default function App() {
 
         {/* ── Prikaz + akcije (kao Sprint 01, ali config iz wizarda) ── */}
         <div className="controls" style={{ marginTop: 28 }}>
-          <button onClick={generate} disabled={!canGenerate} title={canGenerate ? "" : "Provjera izvodivosti nije prošla — popuni config"}>
-            {loading ? "Računam…" : "Generiši raspored"}
+          <button
+            onClick={generate}
+            disabled={!canGenerate}
+            title={
+              loading ? "Rješavač radi…"
+              : feasibilityLoading ? "Provjeravam izvodivost — sačekaj…"
+              : canGenerate ? ""
+              : "Provjera izvodivosti nije prošla — popuni config"
+            }
+          >
+            {loading ? "⏳ Računam…" : "Generiši raspored"}
           </button>
+          {/* SPRINT 04 loader popravka: vidljivo na SVIM ekranima wizarda, ne
+              samo na "Provjera izvodivosti" koraku — provjera se dešava u
+              pozadini poslije svake izmjene, korisnik treba znati da traje. */}
+          {feasibilityLoading && <span className="loading-badge">⏳ Provjeravam izvodivost…</span>}
           <button
             className="secondary"
             onClick={() => setView(view === "class" ? "teacher" : "class")}
@@ -359,11 +424,11 @@ export default function App() {
           </button>
           {lessons.length > 0 && (
             <>
-              <button className="secondary" onClick={() => exportFile("excel")}>
-                Izvezi Excel
+              <button className="secondary" onClick={() => exportFile("excel")} disabled={exportingExcel}>
+                {exportingExcel ? "⏳ Izvozim…" : "Izvezi Excel"}
               </button>
-              <button className="secondary" onClick={() => exportFile("report")}>
-                Izvezi izvještaj
+              <button className="secondary" onClick={() => exportFile("report")} disabled={exportingReport}>
+                {exportingReport ? "⏳ Izvozim…" : "Izvezi izvještaj"}
               </button>
               {/* SPRINT 04 */}
               <button className="secondary" onClick={() => setShowDashboard((v) => !v)}>
@@ -392,7 +457,7 @@ export default function App() {
             backend provjerava ispravnost; ako pravilo bude prekršeno, čas se vraća nazad uz objašnjenje.
           </p>
         )}
-        {moving && <div className="move-banner wiz-summary">Provjeravam pomjeranje…</div>}
+        {moving && <div className="move-banner wiz-summary">⏳ Provjeravam pomjeranje… (čas je providno prikazan dok čekamo backend)</div>}
         {moveError && (
           <div className="err move-banner">
             <b>Pomjeranje odbijeno — čas je vraćen na staro mjesto:</b>
@@ -412,6 +477,8 @@ export default function App() {
               mode={view}
               onCellDragStart={view === "class" ? (d, p) => setDragSrc({ grade: gk, day: d, period: p }) : undefined}
               onCellDrop={view === "class" ? (d, p) => handleDrop(gk, d, p) : undefined}
+              pendingKeys={pendingCells && pendingCells.grade === gk ? pendingCells.keys : null}
+              disableDrag={moving}
             />
           ))
         )}
