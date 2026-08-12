@@ -102,22 +102,17 @@ td.nach{background:#eaf6ff}
 td.reserved{background:#fff2f2;color:var(--red)}
 
 /* ── Prevlačiv čas: grab kursor + blag "lift" na hover (najavljuje da se
-   može podići, prije nego korisnik i proba) ── */
-td.draggable{cursor:grab;transition:transform .12s ease, box-shadow .12s ease}
+   može podići, prije nego korisnik i proba). SPRINT 07: @dnd-kit (miš I
+   dodir) umjesto HTML5 native dnd — isti vizuelni rezultat, drugi mehanizam
+   ispod haube. touch-action:none sprečava da dodirno skrolanje "otme"
+   gest prevlačenja na samoj ćeliji (mreža i dalje horizontalno skrola na
+   dodir kad se počne VAN prevlačive ćelije — vidi TouchSensor delay u
+   App.jsx, standardan obrazac za "prevlačivo unutar skrolabilnog"). ── */
+td.draggable{cursor:grab;transition:transform .12s ease, box-shadow .12s ease;touch-action:none}
 td.draggable:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(3,94,161,.28);position:relative;z-index:1}
-td.draggable:active{cursor:grabbing}
+td.draggable:active,td.dragging{cursor:grabbing}
+td.dragging{box-shadow:0 6px 16px rgba(3,94,161,.35)}
 td.drag-target{background:#fff6d8}
-
-/* SPRINT 06: HTML5 drag-and-drop (draggable atribut) nema pouzdanu podršku
-   na dodirnim ekranima — provjereno uživo (dragstart se ne pokreće dodirom).
-   Prikaži umjesto miš-uputstva jasno objašnjenje zašto prevlačenje ne radi
-   na tom uređaju, umjesto da tiho ne radi. (hover:none)+(pointer:coarse)
-   pouzdano prepoznaje dodirne uređaje bez miša, neovisno o širini ekrana. */
-.touch-only-hint{display:none}
-@media (hover:none) and (pointer:coarse){
-  .mouse-only-hint{display:none}
-  .touch-only-hint{display:block}
-}
 
 /* ─────────────────────────────────────────────────────────────
    Wizard ekrani

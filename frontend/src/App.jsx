@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import "./styles.css"; // Paleta boja škole (CONSTITUTION.md P-4) + layout mreža + wizard ekrani.
 import Wizard from "./Wizard.jsx";
 
@@ -15,24 +16,51 @@ const AUTH_HEADERS = BACKEND_PASSWORD
   ? { Authorization: "Basic " + btoa(":" + BACKEND_PASSWORD) }
   : {};
 
+// ── SPRINT 07: jedna ćelija mreže, i dalje "draggable" I "droppable"
+// istovremeno (isti fizički termin je i moguć izvor i moguć cilj
+// prevlačenja) — @dnd-kit/core zahtijeva da se dvije odvojene hook-ref
+// funkcije spoje u jedan ref callback, standardan obrazac biblioteke.
+// id oblik: "{grade}::{day}::{period}" — jedinstven kroz SVE razrede
+// (jedan zajednički DndContext obuhvata sve mreže odjednom).
+function DraggableCell({ id, canDrag, canDrop, className, title, children }) {
+  const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({ id, disabled: !canDrag });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, disabled: !canDrop });
+  const setRefs = useCallback((node) => { setDragRef(node); setDropRef(node); }, [setDragRef, setDropRef]);
+  const style = {};
+  if (transform) style.transform = `translate3d(${transform.x}px, ${transform.y}px, 0)`;
+  if (isDragging) style.zIndex = 50;
+  const classes = [className, isDragging ? "dragging" : "", isOver && canDrop ? "drag-target" : ""].filter(Boolean).join(" ");
+  return (
+    <td
+      ref={setRefs}
+      className={classes}
+      style={style}
+      title={title}
+      {...(canDrag ? attributes : {})}
+      {...(canDrag ? listeners : {})}
+    >
+      {children}
+    </td>
+  );
+}
+
 // ── Jedna mreža 7×5 za jednu grupu (nastavnik ILI razred) ──────────────
-// SPRINT 04: u prikazu "po razredu" (mode==="class"), časovi se mogu
-// prevući (drag-and-drop) u drugi termin ISTOG razreda. Blok/fiksni časovi
-// se NE prevlače (isto pravilo kao solver — P-2, honorarni/fiksni se ne
-// pomjeraju). onCellDrop/onCellDragStart su undefined kad drag-and-drop
-// nije aktivan (prikaz po nastavniku, ili nema generisanog rasporeda).
+// U prikazu "po razredu" (mode==="class"), časovi se mogu prevući
+// (@dnd-kit — miš I dodir, SPRINT 07) u drugi termin ISTOG razreda. Blok/
+// fiksni časovi se NE prevlače (isto pravilo kao solver — P-2, honorarni/
+// fiksni se ne pomjeraju), ali OSTAJU važeći cilj (droppable) — isto kao
+// ranije, backend/validate-move ih odbija sa jasnom porukom.
+// grade: potreban za id ćelija (samo u "po razredu" prikazu).
 // disableDrag: true dok BILO KOJI drag-and-drop poziv već traje (bilo gdje u
-// aplikaciji) — sprečava pokretanje drugog prevlačenja prije nego prvi završi
-// (isti princip kao disabled dugme, primijenjen na drag gestove). Vizuelna
-// povratna informacija za "traje" ide kroz jedinstveni LoadingOverlay, ne
-// kroz ovu komponentu.
-function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop, disableDrag }) {
+// aplikaciji) — sprečava pokretanje drugog prevlačenja prije nego prvi
+// završi (isti princip kao disabled dugme, primijenjen na drag gestove).
+// Vizuelna povratna informacija za "traje" ide kroz jedinstveni
+// LoadingOverlay, ne kroz ovu komponentu.
+function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
   // cells: mapa "day|period" -> lekcija
   const days = config.days;
   const periods = config.periods;
   const times = config.period_times || {};
-  const [overKey, setOverKey] = useState(null); // vizuelni highlight cilja prevlačenja
-  const dndOn = mode === "class" && !!onCellDrop;
   return (
     <div className="block">
       <h3>{title}</h3>
@@ -57,46 +85,39 @@ function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop, disable
                 const isNach = L && L.subj === "Nacharbeit";
                 const isRes = L && String(L.teacher).startsWith("REZERVISANO");
                 const isFixedOrBlock = L && (L.kind === "block" || L.kind === "fixed");
-                const key = `${d}|${p}`;
-                const canDrag = dndOn && !disableDrag && L && !isFixedOrBlock;
-                const classes = [
-                  isRes ? "reserved" : isNach ? "nach" : "",
-                  canDrag ? "draggable" : "",
-                  dndOn && overKey === key ? "drag-target" : "",
-                ].filter(Boolean).join(" ");
+                const canDrag = dndEnabled && !disableDrag && !!L && !isFixedOrBlock;
+                const canDrop = dndEnabled && !disableDrag && !!L;
+                const classes = [isRes ? "reserved" : isNach ? "nach" : "", canDrag ? "draggable" : ""]
+                  .filter(Boolean).join(" ");
+                const cellTitle = canDrag
+                  ? "Prevuci u drugi termin istog razreda"
+                  : isFixedOrBlock ? "Blok/fiksni čas se ne može ručno pomjerati" : undefined;
+                const content = L ? (
+                  <>
+                    <div className="sub">
+                      {L.subj}
+                      {L.grade != null && mode === "teacher" ? ` ${L.grade}` : ""}
+                    </div>
+                    <div className="who">
+                      {mode === "class" ? String(L.teacher).split(" ")[0] : ""}
+                    </div>
+                  </>
+                ) : "";
+
+                if (!dndEnabled) {
+                  return <td key={d} className={classes} title={cellTitle}>{content}</td>;
+                }
                 return (
-                  <td
+                  <DraggableCell
                     key={d}
+                    id={`${grade}::${d}::${p}`}
+                    canDrag={canDrag}
+                    canDrop={canDrop}
                     className={classes}
-                    draggable={canDrag}
-                    title={
-                      canDrag ? "Prevuci u drugi termin istog razreda"
-                      : isFixedOrBlock ? "Blok/fiksni čas se ne može ručno pomjerati"
-                      : undefined
-                    }
-                    onDragStart={canDrag ? () => onCellDragStart(d, p) : undefined}
-                    onDragOver={dndOn && !disableDrag ? (e) => { e.preventDefault(); setOverKey(key); } : undefined}
-                    onDragLeave={dndOn ? () => setOverKey((k) => (k === key ? null : k)) : undefined}
-                    onDrop={
-                      dndOn && !disableDrag
-                        ? (e) => { e.preventDefault(); setOverKey(null); onCellDrop(d, p); }
-                        : undefined
-                    }
+                    title={cellTitle}
                   >
-                    {L ? (
-                      <>
-                        <div className="sub">
-                          {L.subj}
-                          {L.grade != null && mode === "teacher" ? ` ${L.grade}` : ""}
-                        </div>
-                        <div className="who">
-                          {mode === "class" ? String(L.teacher).split(" ")[0] : ""}
-                        </div>
-                      </>
-                    ) : (
-                      ""
-                    )}
-                  </td>
+                    {content}
+                  </DraggableCell>
                 );
               })}
             </tr>
@@ -278,13 +299,22 @@ export default function App() {
   const [verdict, setVerdict] = useState(null);
 
   // ručna korekcija drag-and-drop (samo prikaz "po razredu").
-  // dragSrc: {grade, day, period} — čas koji se trenutno prevlači, ili null.
-  const [dragSrc, setDragSrc] = useState(null);
   // pendingMove: {grade, src:{day,period}, dst:{day,period}} dok /validate-move
   // poziv traje, inače null — koristi se za `disableDrag` (sprečava drugi
   // drag prije nego prvi završi) i ulazi u `anyLoading` niže.
   const [pendingMove, setPendingMove] = useState(null);
   const moving = !!pendingMove;
+
+  // SPRINT 07: @dnd-kit senzori — miš (distance: mala udaljenost prije nego
+  // prevlačenje počne, isti "osjećaj" kao ranije) i dodir (delay: mora se
+  // zadržati prst ~200ms prije nego počne prevlačenje — bez ovoga bi svaki
+  // pokušaj horizontalnog skrolanja mreže na dodirnom ekranu greškom
+  // pokretao prevlačenje časa umjesto skrolanja, standardan obrazac
+  // biblioteke za "prevlačivo unutar skrolabilnog").
+  const dndSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  );
 
   // dok se izvozi Excel/izvještaj, dugme koje je kliknuto je onemogućeno
   // (samo TO dugme, ne oba) — vizuelni loader ide kroz LoadingOverlay.
@@ -376,32 +406,39 @@ export default function App() {
     }
   }
 
-  // ── SPRINT 04: ručna korekcija (drag-and-drop) ──────────────────────
+  // ── Ručna korekcija (drag-and-drop, @dnd-kit — miš i dodir) ─────────
   // Poziva /validate-move (tanka omotnica oko POSTOJEĆEG validators.py).
   // Ako backend kaže da je novi raspored ispravan -> prihvati ga (prikaz
   // se ažurira). Ako NIJE -> ništa se ne mijenja (čas ostaje gdje je bio,
   // jer `lessons` state nikad nije optimistički promijenjen) + prikaži
-  // JASNU poruku zašto (direktno iz validate()).
-  async function handleDrop(grade, day, period) {
-    if (pendingMove) return; // već traje jedan poziv — ignoriši dok ne završi (isto kao disabled dugme)
-    const src = dragSrc;
-    setDragSrc(null);
-    if (!src) return;
-    if (src.grade !== grade) {
+  // JASNU poruku zašto (direktno iz validate()), u verdict prozoru.
+  // event.active/event.over dolaze direktno iz @dnd-kit (id oblik
+  // "grade::day::period") — ne treba više posebno pratiti "izvor" kroz
+  // odvojeni onDragStart, DndContext daje oboje odjednom u onDragEnd.
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || pendingMove) return; // ispušteno van cilja, ili već traje jedan poziv
+    const [srcGradeStr, srcDay, srcPeriodStr] = String(active.id).split("::");
+    const [dstGradeStr, dstDay, dstPeriodStr] = String(over.id).split("::");
+    const grade = Number(srcGradeStr);
+    const srcPeriod = Number(srcPeriodStr);
+    const dstPeriod = Number(dstPeriodStr);
+
+    if (Number(dstGradeStr) !== grade) {
       setVerdict({ kind: "error", title: "Nije moguće", messages: ["Čas se može prevući samo unutar istog razreda."] });
       return;
     }
-    if (src.day === day && src.period === period) return; // ispušteno na isto mjesto — ništa se ne dešava
+    if (srcDay === dstDay && srcPeriod === dstPeriod) return; // ispušteno na isto mjesto — ništa se ne dešava
 
-    setPendingMove({ grade, src, dst: { day, period } });
+    setPendingMove({ grade, src: { day: srcDay, period: srcPeriod }, dst: { day: dstDay, period: dstPeriod } });
     try {
       const res = await fetch(`${API}/validate-move`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
         body: JSON.stringify({
           config, lessons, grade,
-          src_day: src.day, src_period: src.period,
-          dst_day: day, dst_period: period,
+          src_day: srcDay, src_period: srcPeriod,
+          dst_day: dstDay, dst_period: dstPeriod,
         }),
       });
       const data = await res.json();
@@ -498,39 +535,34 @@ export default function App() {
 
         {exportError && <div className="err">{exportError}</div>}
 
-        {/* Ručna korekcija — kratka uputa za prevlačenje časova. SPRINT 06:
-            HTML5 prevlačenje ne radi na dodirnim ekranima (provjereno uživo)
-            — na takvim uređajima prikaži jasno objašnjenje umjesto miš-upute
-            koja bi tiho ne radila (CSS bira koja se prikazuje, vidi
-            .mouse-only-hint/.touch-only-hint u styles.css). */}
+        {/* Ručna korekcija — kratka uputa za prevlačenje časova. SPRINT 07:
+            @dnd-kit radi na mišu I na dodiru (potvrđeno uživo pravim touch
+            eventima) — jedna uputa za sve uređaje, stara "samo na računaru"
+            poruka iz Sprint 06 više nije tačna, uklonjena. */}
         {!showDashboard && lessons.length > 0 && view === "class" && (
-          <>
-            <p className="hint mouse-only-hint" style={{ marginTop: -6 }}>
-              💡 Prevuci čas u drugi termin istog razreda da ga ručno pomjeriš — ispravnost se provjerava
-              automatski; ako neko pravilo bude prekršeno, čas se vraća na svoje mjesto uz objašnjenje.
-            </p>
-            <p className="hint touch-only-hint" style={{ marginTop: -6 }}>
-              ℹ️ Ručno pomjeranje časova prevlačenjem dostupno je samo na računaru (miš) — na ovom
-              dodirnom uređaju trenutno nije moguće prevući čas.
-            </p>
-          </>
+          <p className="hint" style={{ marginTop: -6 }}>
+            💡 Prevuci čas u drugi termin istog razreda da ga ručno pomjeriš — ispravnost se provjerava
+            automatski; ako neko pravilo bude prekršeno, čas se vraća na svoje mjesto uz objašnjenje.
+          </p>
         )}
 
         {showDashboard ? (
           <DashboardTable lessons={lessons} days={config.days} />
         ) : (
-          groupOrder.map((gk) => (
-            <Grid
-              key={gk}
-              title={view === "teacher" ? gk : `${gk}. razred`}
-              cells={groups[gk]}
-              config={config}
-              mode={view}
-              onCellDragStart={view === "class" ? (d, p) => setDragSrc({ grade: gk, day: d, period: p }) : undefined}
-              onCellDrop={view === "class" ? (d, p) => handleDrop(gk, d, p) : undefined}
-              disableDrag={moving}
-            />
-          ))
+          <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
+            {groupOrder.map((gk) => (
+              <Grid
+                key={gk}
+                title={view === "teacher" ? gk : `${gk}. razred`}
+                cells={groups[gk]}
+                config={config}
+                mode={view}
+                grade={gk}
+                dndEnabled={view === "class"}
+                disableDrag={moving}
+              />
+            ))}
+          </DndContext>
         )}
       </main>
     </>
