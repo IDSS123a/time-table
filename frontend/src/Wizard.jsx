@@ -407,7 +407,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {step === 0 && (
         <div className="wiz-panel">
           <h2>Struktura dana</h2>
-          <p className="hint">USTAV Faza 0: broj dana, časova, vremena, te koja su jutarnja / Nacharbeit polja. Ovo određuje ciljni broj časova po razredu.</p>
+          <p className="hint">Odredi broj dana i časova u sedmici, njihova vremena, te koji periodi su jutarnji, a koji za Nacharbeit. Ovo određuje ciljni broj časova po razredu.</p>
 
           <Field label="Radni dani (zarezom)">
             <input type="text" value={w.days.join(", ")} onChange={(e) => up({ days: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })} />
@@ -459,7 +459,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {step === 1 && (
         <div className="wiz-panel">
           <h2>Nastavnici i predmeti</h2>
-          <p className="hint">USTAV Faza 0/1: svi nastavnici, predmeti sa kategorijom (glavni-jutarnji / blok / obični), te redovni časovi i honorarni sa fiksnim terminima.</p>
+          <p className="hint">Unesi sve nastavnike, predmete sa kategorijom (glavni-jutarnji / blok / obični), te redovne časove i honorarne nastavnike sa fiksnim terminima.</p>
 
           <div className="wiz-section-title">Nastavnici</div>
           <div className="wiz-inline-form">
@@ -472,7 +472,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               el.value = "";
             }}>+ Dodaj nastavnika</button>
           </div>
-          {w.teachers.length === 0 ? <div className="wiz-empty">Još nema nastavnika.</div> : (
+          {w.teachers.length === 0 ? <div className="wiz-empty">Još nema nastavnika — dodaj prvog u formi iznad ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>#</th><th>Ime</th><th>Zadnji dozvoljeni čas</th><th className="act">Akcija</th></tr></thead>
               <tbody>
@@ -501,7 +501,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               </tbody>
             </table>
           )}
-          <p className="hint">"Zadnji dozvoljeni čas" (max_period) = nastavnik se NIKAD ne raspoređuje poslije tog časa (uključivo). Ostavi prazno ako nema ograničenja. (config_schema.md: teacher_constraints)</p>
+          <p className="hint">"Zadnji dozvoljeni čas" = nastavnik se nikad ne raspoređuje poslije tog časa (uključujući njega). Ostavi prazno ako nema ograničenja.</p>
 
           <div className="wiz-section-title">Predmeti (sa kategorijom)</div>
           <div className="wiz-inline-form">
@@ -522,7 +522,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               el.value = "";
             }}>+ Dodaj predmet</button>
           </div>
-          {w.subjects.length === 0 ? <div className="wiz-empty">Još nema predmeta.</div> : (
+          {w.subjects.length === 0 ? <div className="wiz-empty">Još nema predmeta — dodaj prvi u formi iznad ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>#</th><th>Predmet</th><th>Kategorija</th><th>Lakši</th><th>Blok razredi (ako blok)</th><th>Jutarnji samo za razred(e)</th><th className="act">Akcija</th></tr></thead>
               <tbody>
@@ -560,7 +560,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
                           <button
                             key={g}
                             className={`chip ${(s.morningGrades || []).includes(g) ? "" : "off"}`}
-                            title="Jutarnji SAMO u ovom razredu (config_schema.md: morning_core_by_grade)"
+                            title="Jutarnji samo u ovom razredu"
                             onClick={() => {
                               const mg = s.morningGrades || [];
                               const has = mg.includes(g);
@@ -576,7 +576,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               </tbody>
             </table>
           )}
-          <p className="hint">"Jutarnji samo za razred(e)" — označi razrede u kojima OVAJ predmet MORA biti u jutarnjem terminu (npr. B/H/S ili Englisch samo u razredima 1, 2, 4 — ne svuda gdje se predaje). Za predmet koji je jutarnji SVUDA gdje se predaje, koristi kategoriju "Glavni-jutarnji" umjesto ovoga. (config_schema.md: morning_core_by_grade)</p>
+          <p className="hint">"Jutarnji samo za razred(e)" — označi razrede u kojima ovaj predmet mora biti u jutarnjem terminu (npr. B/H/S ili Englisch samo u razredima 1, 2, 4 — ne svuda gdje se predaje). Za predmet koji je jutarnji svuda gdje se predaje, koristi kategoriju "Glavni-jutarnji" umjesto ovoga.</p>
 
           <div className="wiz-section-title">Redovni časovi (mobilni — raspoređuju se)</div>
           <p className="hint">Za svaki predmet po razredu: broj sedmičnih časova. Ako je predmet blok, count treba biti 2.</p>
@@ -594,7 +594,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               addList("lessons", { id: nextId(), grades: gRaw, subj, teacher, count, kind: "regular" });
             }}>+ Dodaj čas</button>
           </div>
-          {w.lessons.filter((L) => L.kind === "regular").length === 0 ? <div className="wiz-empty">Još nema redovnih časova.</div> : (
+          {w.lessons.filter((L) => L.kind === "regular").length === 0 ? <div className="wiz-empty">Još nema redovnih časova — dodaj prvi u formi iznad ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>#</th><th>Razred</th><th>Predmet</th><th>Nastavnik</th><th>Časova</th><th className="act">Akcija</th></tr></thead>
               <tbody>
@@ -631,7 +631,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
               addList("teachers_fixed", { id: nextId(), teacher, subj, grade, day, period });
             }}>+ Dodaj fiksni termin</button>
           </div>
-          {w.teachers_fixed.length === 0 ? <div className="wiz-empty">Još nema fiksnih termina.</div> : (
+          {w.teachers_fixed.length === 0 ? <div className="wiz-empty">Još nema fiksnih termina — dodaj prvi u formi iznad ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>#</th><th>Nastavnik</th><th>Predmet</th><th>Razred</th><th>Dan</th><th>Čas</th><th className="act">Akcija</th></tr></thead>
               <tbody>
@@ -656,10 +656,10 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {step === 2 && (
         <div className="wiz-panel">
           <h2>Razredi i razredništva</h2>
-          <p className="hint">USTAV Faza 1: ko je razrednik kojeg razreda, te za koje razrede vrijedi „razrednik svaki dan”. Ostali su izuzeci (specijalista predaje premalo).</p>
+          <p className="hint">Odredi ko je razrednik kojeg razreda, te za koje razrede vrijedi „razrednik svaki dan”. Ostali su izuzeci (kad razrednik predaje premalo časova da bi to bilo izvodivo).</p>
 
           <div className="wiz-section-title">Razrednik po razredu</div>
-          {grades.length === 0 ? <div className="wiz-empty">Prvo dodaj razrede u Ekranu A.</div> : (
+          {grades.length === 0 ? <div className="wiz-empty">Još nema razreda — dodaj ih na Ekranu A ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>Razred</th><th>Razrednik (nastavnik)</th></tr></thead>
               <tbody>
@@ -695,7 +695,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {step === 3 && (
         <div className="wiz-panel">
           <h2>Nacharbeit plan</h2>
-          <p className="hint">USTAV Faza 1: po razredu — broj Nacharbeit časova i nosilac(i). Nacharbeit ide u zadnje časeve dana ({w.nach_periods.join(", ")}) kao sufiks. Unosi se kao čas sa vrstom „Nacharbeit”.</p>
+          <p className="hint">Za svaki razred unesi broj Nacharbeit časova i ko ih vodi. Nacharbeit ide u zadnje časove dana ({w.nach_periods.join(", ")}), uvijek kao posljednji u rasporedu tog dana.</p>
 
           <div className="wiz-inline-form">
             <div className="f"><label>Razred</label><select id="nL_grade">{grades.map((g) => <option key={g} value={g}>{g}</option>)}</select></div>
@@ -710,7 +710,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
             }}>+ Dodaj Nacharbeit</button>
           </div>
 
-          {w.lessons.filter((L) => L.kind === "nach").length === 0 ? <div className="wiz-empty">Još nema Nacharbeit časova.</div> : (
+          {w.lessons.filter((L) => L.kind === "nach").length === 0 ? <div className="wiz-empty">Još nema Nacharbeit časova — dodaj prvi u formi iznad ↑</div> : (
             <table className="wiz-table">
               <thead><tr><th>#</th><th>Razred</th><th>Nosilac</th><th>Časova</th><th className="act">Akcija</th></tr></thead>
               <tbody>
@@ -736,8 +736,8 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {/* ── EKRAN: Provjera izvodivosti ── */}
       {step === 4 && (
         <div className="wiz-panel">
-          <h2>Provjera izvodivosti (Faza 3)</h2>
-          <p className="hint">Prije „Generiši”, backend provjerava da traženo uopšte može stati. Dugme „Generiši” je onemogućeno dok provjera ne prođe.</p>
+          <h2>Provjera izvodivosti</h2>
+          <p className="hint">Prije generisanja rasporeda, sistem provjerava da li uneseni podaci uopšte mogu stati u sedmični raspored. Dugme „Generiši raspored” je onemogućeno dok provjera ne prođe.</p>
 
           <div className="wiz-section-title">Suma časova po razredu (cilj: {totalSlots})</div>
           <table className="wiz-table">
@@ -758,7 +758,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
             </tbody>
           </table>
 
-          <div className="wiz-section-title">Rezultat backenda (POST /feasibility)</div>
+          <div className="wiz-section-title">Rezultat provjere</div>
           {feasibilityLoading ? (
             <div className="wiz-summary">Provjeravam…</div>
           ) : feasibility?.ok ? (
@@ -767,7 +767,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
             <div className="wiz-summary">
               <span className="bad">✗ Nije izvodivo — popraviti:</span>
               <ul className="wiz-feaslist">
-                {(feasibility?.problems || ["Provjeri da je backend pokrenut."]).map((p, i) => <li key={i}>{p}</li>)}
+                {(feasibility?.problems || ["Sistem trenutno nije dostupan — pokušaj ponovo za koji trenutak."]).map((p, i) => <li key={i}>{p}</li>)}
               </ul>
             </div>
           )}
@@ -777,12 +777,12 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {/* ── EKRAN ⑥: Napredno — sirovi config JSON ── */}
       {step === ADVANCED_STEP && (
         <div className="wiz-panel">
-          <h2>Napredno — sirovi config (JSON)</h2>
+          <h2>Napredno — podaci u sirovom obliku (JSON)</h2>
           <p className="hint">
-            Ovdje vidiš TAČAN config koji wizard šalje backendu, kao tekst. Koristi ovo kad
-            wizard forma (Ekrani A–D) još nema polje za nešto što ti treba — uredi tekst direktno
-            i klikni „Primijeni”. Isto kao Učitaj config (.json), samo bez fajla. Ako ne znaš šta
-            je JSON ili ti ovo ne treba, slobodno preskoči ovaj ekran.
+            Ovdje vidiš tačne podatke koje wizard koristi za izradu rasporeda, kao tekst. Koristi
+            ovo kad wizard forma (Ekrani A–D) još nema polje za nešto što ti treba — uredi tekst
+            direktno i klikni „Primijeni izmjene”. Isto kao Učitaj config (.json), samo bez fajla.
+            Ako ne znaš šta je JSON ili ti ovo ne treba, slobodno preskoči ovaj ekran.
           </p>
           <textarea
             className="wiz-json"

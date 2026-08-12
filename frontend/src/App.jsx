@@ -108,10 +108,12 @@ function Grid({ title, cells, config, mode, onCellDragStart, onCellDrop, disable
 }
 
 // ── Dashboard opterećenja: časova/sedmično + najveća dnevna rupa po nastavniku ──
-// SPRINT 04. Rupa = ista definicija kao u solver.py (_polish_gaps.gap_penalty):
+// Rupa = ista definicija kao u solver.py (_polish_gaps.gap_penalty):
 // (max period - min period + 1) - broj časova tog dana, za dane kad nastavnik
 // uopšte predaje. Uzima se NAJVEĆA takva vrijednost preko svih dana (sedmice).
 // REZERVISANO nije stvarna osoba — izostavljeno iz dashboarda.
+// SPRINT 05: traka opterećenja (--navy, dužina ∝ časovi) + najopterećeniji
+// red istaknut tankom --yellow linijom (info, ne greška).
 function DashboardTable({ lessons, days }) {
   const rows = useMemo(() => {
     const byTeacher = {};
@@ -137,6 +139,7 @@ function DashboardTable({ lessons, days }) {
     out.sort((a, b) => b.hours - a.hours);
     return out;
   }, [lessons, days]);
+  const maxHours = rows.length ? rows[0].hours : 0;
 
   function exportCsv() {
     const header = "Nastavnik,Casova sedmicno,Najveca dnevna rupa\n";
@@ -163,14 +166,20 @@ function DashboardTable({ lessons, days }) {
             <tr>
               <th>Nastavnik</th>
               <th>Časova sedmično</th>
+              <th>Opterećenje</th>
               <th>Najveća dnevna rupa</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.name}>
+            {rows.map((r, i) => (
+              <tr key={r.name} className={i === 0 ? "top-loaded" : ""} title={i === 0 ? "Najveći sedmični broj časova" : undefined}>
                 <td>{r.name}</td>
                 <td>{r.hours}</td>
+                <td>
+                  <div className="dash-bar-track">
+                    <div className="dash-bar-fill" style={{ width: `${maxHours ? (r.hours / maxHours) * 100 : 0}%` }} />
+                  </div>
+                </td>
                 <td className={r.maxGap >= 3 ? "hot" : ""}>{r.maxGap}</td>
               </tr>
             ))}
@@ -190,6 +199,46 @@ function LoadingOverlay({ active }) {
   return (
     <div className="loading-overlay-backdrop" role="status" aria-live="polite" aria-label="Učitavam…">
       <div className="loader" />
+    </div>
+  );
+}
+
+// ── Verdict prozor (SPRINT 05, signature element) ──────────────────────
+// Prikazuje se nakon SVAKE odluke backenda: prihvaćena/odbijena izmjena
+// rasporeda (drag-and-drop) i uspješan/neuspješan Generiši. Uspjeh nestaje
+// sam nakon ~4s; greška ostaje dok je korisnik sam ne zatvori (klik izvan
+// kartice ili na ✕) — greška se ne smije sama izgubiti.
+// verdict: null | { kind: "success"|"error", title, messages?: string[] }
+function VerdictModal({ verdict, onClose }) {
+  useEffect(() => {
+    if (verdict?.kind === "success") {
+      const t = setTimeout(onClose, 4000);
+      return () => clearTimeout(t);
+    }
+  }, [verdict, onClose]);
+
+  if (!verdict) return null;
+  const isSuccess = verdict.kind === "success";
+  return (
+    <div className="verdict-backdrop" onClick={onClose}>
+      <div
+        className={`verdict-card neu-raised ${isSuccess ? "verdict-success" : "verdict-error"}`}
+        role="alertdialog"
+        aria-live="assertive"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="verdict-close" onClick={onClose} aria-label="Zatvori">✕</button>
+        <div className="verdict-icon">{isSuccess ? "✓" : "⊘"}</div>
+        <h3>{verdict.title}</h3>
+        {verdict.sub && <p className="verdict-sub">{verdict.sub}</p>}
+        {verdict.messages && verdict.messages.length > 0 && (
+          <ul className="verdict-list">
+            {verdict.messages.map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -219,19 +268,21 @@ export default function App() {
     };
   });
   const [lessons, setLessons] = useState([]);
-  const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState("class"); // "class" | "teacher"
-  const [apiError, setApiError] = useState("");
-  const [showDashboard, setShowDashboard] = useState(false); // SPRINT 04
+  const [exportError, setExportError] = useState(""); // samo izvoz Excel/izvještaj — ostalo ide kroz verdict
+  const [showDashboard, setShowDashboard] = useState(false);
 
-  // SPRINT 04: ručna korekcija drag-and-drop (samo prikaz "po razredu").
+  // SPRINT 05: verdict prozor — rezultat SVAKE odluke backenda (Generiši,
+  // ručno pomjeranje). Vidi VerdictModal.
+  const [verdict, setVerdict] = useState(null);
+
+  // ručna korekcija drag-and-drop (samo prikaz "po razredu").
   // dragSrc: {grade, day, period} — čas koji se trenutno prevlači, ili null.
   const [dragSrc, setDragSrc] = useState(null);
-  const [moveError, setMoveError] = useState("");
   // pendingMove: {grade, src:{day,period}, dst:{day,period}} dok /validate-move
-  // poziv traje, inače null — i dalje koristi se za `disableDrag` (sprečava
-  // drugi drag prije nego prvi završi) i ulazi u `anyLoading` niže.
+  // poziv traje, inače null — koristi se za `disableDrag` (sprečava drugi
+  // drag prije nego prvi završi) i ulazi u `anyLoading` niže.
   const [pendingMove, setPendingMove] = useState(null);
   const moving = !!pendingMove;
 
@@ -240,7 +291,7 @@ export default function App() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingReport, setExportingReport] = useState(false);
 
-  // SPRINT 02: provjera izvodivosti (Faza 3) — drži rezultat, zove /feasibility.
+  // provjera izvodivosti — drži rezultat, zove /feasibility u pozadini.
   const [feasibility, setFeasibility] = useState(null);
   const [feasibilityLoading, setFeasibilityLoading] = useState(false);
 
@@ -273,8 +324,6 @@ export default function App() {
 
   async function generate() {
     setLoading(true);
-    setApiError("");
-    setErrors([]);
     try {
       const res = await fetch(`${API}/solve`, {
         method: "POST",
@@ -283,9 +332,17 @@ export default function App() {
       });
       const data = await res.json();
       setLessons(data.lessons || []);
-      setErrors(data.errors || []);
+      if (data.ok) {
+        setVerdict({ kind: "success", title: "Raspored je generisan", sub: "Svi časovi su uspješno raspoređeni." });
+      } else {
+        setVerdict({
+          kind: "error",
+          title: "Raspored nije moguć",
+          messages: data.errors && data.errors.length ? data.errors : ["Rješavač nije uspio pronaći ispravan raspored."],
+        });
+      }
     } catch (e) {
-      setApiError(`Ne mogu se povezati s backendom (${API}). Je li pokrenut? (${e})`);
+      setVerdict({ kind: "error", title: "Veza nije uspjela", messages: [`Provjeri internet vezu i pokušaj ponovo. (${e})`] });
     } finally {
       setLoading(false);
     }
@@ -294,7 +351,7 @@ export default function App() {
   async function exportFile(kind) {
     const setBusy = kind === "excel" ? setExportingExcel : setExportingReport;
     setBusy(true);
-    setApiError("");
+    setExportError("");
     try {
       const res = await fetch(`${API}/export/${kind}`, {
         method: "POST",
@@ -302,7 +359,7 @@ export default function App() {
         body: JSON.stringify({ config, lessons }),
       });
       if (!res.ok) {
-        setApiError(`Izvoz nije uspio (HTTP ${res.status}).`);
+        setExportError(`Izvoz nije uspio (greška ${res.status}).`);
         return;
       }
       const blob = await res.blob();
@@ -313,7 +370,7 @@ export default function App() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setApiError(`Izvoz nije uspio — ne mogu se povezati s backendom (${e}).`);
+      setExportError(`Izvoz nije uspio — provjeri internet vezu. (${e})`);
     } finally {
       setBusy(false);
     }
@@ -331,13 +388,12 @@ export default function App() {
     setDragSrc(null);
     if (!src) return;
     if (src.grade !== grade) {
-      setMoveError("Čas se može prevući samo unutar ISTOG razreda.");
+      setVerdict({ kind: "error", title: "Nije moguće", messages: ["Čas se može prevući samo unutar istog razreda."] });
       return;
     }
     if (src.day === day && src.period === period) return; // ispušteno na isto mjesto — ništa se ne dešava
 
     setPendingMove({ grade, src, dst: { day, period } });
-    setMoveError("");
     try {
       const res = await fetch(`${API}/validate-move`, {
         method: "POST",
@@ -351,13 +407,18 @@ export default function App() {
       const data = await res.json();
       if (res.ok && data.ok) {
         setLessons(data.lessons);
-        setMoveError("");
+        setVerdict({ kind: "success", title: "Promjena prihvaćena" });
       } else {
         const msgs = (data.errors && data.errors.length) ? data.errors : [data.detail || "Nepoznata greška."];
-        setMoveError(msgs.join(" · "));
+        setVerdict({ kind: "error", title: "Nije moguće", sub: "Čas je vraćen na svoje mjesto.", messages: msgs });
       }
     } catch (e) {
-      setMoveError(`Ne mogu se povezati s backendom za provjeru pomjeranja (${e}). Čas je vraćen na staro mjesto.`);
+      setVerdict({
+        kind: "error",
+        title: "Veza nije uspjela",
+        sub: "Čas je vraćen na svoje mjesto.",
+        messages: [`Provjeri internet vezu i pokušaj ponovo. (${e})`],
+      });
     } finally {
       setPendingMove(null);
     }
@@ -389,12 +450,15 @@ export default function App() {
   return (
     <>
       <LoadingOverlay active={anyLoading} />
-      <header>
-        <h1>IDSS — Raspored časova</h1>
-        <small>Sprint 02 · Wizard za unos config-a · USTAV Faze 0–3</small>
+      <VerdictModal verdict={verdict} onClose={() => setVerdict(null)} />
+      <header className="app-header">
+        <div className="app-header-inner">
+          <img className="app-logo" src="https://idss.edu.ba/wp-content/uploads/2024/03/logo_white.png" alt="IDSS logo" />
+          <h1 className="app-title">Raspored časova za IDSS</h1>
+        </div>
       </header>
       <main>
-        {/* ── SPRINT 02: Wizard (gore) ── */}
+        {/* ── Wizard (gore) ── */}
         <Wizard
           config={config}
           onConfig={setConfig}
@@ -425,7 +489,6 @@ export default function App() {
               <button className="secondary" onClick={() => exportFile("report")} disabled={exportingReport}>
                 Izvezi izvještaj
               </button>
-              {/* SPRINT 04 */}
               <button className="secondary" onClick={() => setShowDashboard((v) => !v)}>
                 {showDashboard ? "◀ Nazad na raspored" : "📊 Dashboard opterećenja"}
               </button>
@@ -433,30 +496,14 @@ export default function App() {
           )}
         </div>
 
-        {apiError && <div className="err">{apiError}</div>}
-        {errors.length > 0 && (
-          <div className="err">
-            <b>Validacija nije čista ({errors.length}):</b>
-            <ul>
-              {errors.slice(0, 12).map((e, i) => (
-                <li key={i}>{e}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {exportError && <div className="err">{exportError}</div>}
 
-        {/* SPRINT 04: ručna korekcija — poruka o (ne)uspjeloj promjeni termina */}
+        {/* Ručna korekcija — kratka uputa za prevlačenje časova */}
         {!showDashboard && lessons.length > 0 && view === "class" && (
           <p className="hint" style={{ marginTop: -6 }}>
-            💡 Prevuci (drag-and-drop) čas u drugi termin ISTOG razreda da ga ručno pomjeriš —
-            backend provjerava ispravnost; ako pravilo bude prekršeno, čas se vraća nazad uz objašnjenje.
+            💡 Prevuci čas u drugi termin istog razreda da ga ručno pomjeriš — ispravnost se provjerava
+            automatski; ako neko pravilo bude prekršeno, čas se vraća na svoje mjesto uz objašnjenje.
           </p>
-        )}
-        {moveError && (
-          <div className="err move-banner">
-            <b>Pomjeranje odbijeno — čas je vraćen na staro mjesto:</b>
-            <div>{moveError}</div>
-          </div>
         )}
 
         {showDashboard ? (
