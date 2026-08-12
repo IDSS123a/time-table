@@ -498,12 +498,22 @@ export default function App() {
 
         {exportError && <div className="err">{exportError}</div>}
 
-        {/* Ručna korekcija — kratka uputa za prevlačenje časova */}
+        {/* Ručna korekcija — kratka uputa za prevlačenje časova. SPRINT 06:
+            HTML5 prevlačenje ne radi na dodirnim ekranima (provjereno uživo)
+            — na takvim uređajima prikaži jasno objašnjenje umjesto miš-upute
+            koja bi tiho ne radila (CSS bira koja se prikazuje, vidi
+            .mouse-only-hint/.touch-only-hint u styles.css). */}
         {!showDashboard && lessons.length > 0 && view === "class" && (
-          <p className="hint" style={{ marginTop: -6 }}>
-            💡 Prevuci čas u drugi termin istog razreda da ga ručno pomjeriš — ispravnost se provjerava
-            automatski; ako neko pravilo bude prekršeno, čas se vraća na svoje mjesto uz objašnjenje.
-          </p>
+          <>
+            <p className="hint mouse-only-hint" style={{ marginTop: -6 }}>
+              💡 Prevuci čas u drugi termin istog razreda da ga ručno pomjeriš — ispravnost se provjerava
+              automatski; ako neko pravilo bude prekršeno, čas se vraća na svoje mjesto uz objašnjenje.
+            </p>
+            <p className="hint touch-only-hint" style={{ marginTop: -6 }}>
+              ℹ️ Ručno pomjeranje časova prevlačenjem dostupno je samo na računaru (miš) — na ovom
+              dodirnom uređaju trenutno nije moguće prevući čas.
+            </p>
+          </>
         )}
 
         {showDashboard ? (

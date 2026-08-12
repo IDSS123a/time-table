@@ -35,17 +35,28 @@ body{margin:0;font-family:var(--font-body),Arial,Helvetica,sans-serif;color:var(
 /* focus-visible svugdje (tastaturna navigacija) — pristupačnost, ne kozmetika */
 :focus-visible{outline:3px solid var(--sky);outline-offset:2px;border-radius:4px}
 
-/* ── Zaglavlje: logo lijevo, naslov centriran, ista visina ── */
+/* ── Zaglavlje: logo lijevo, naslov centriran, ista visina (desktop/tablet).
+   SPRINT 06: na uskim ekranima (≤600px) naslov i logo se ne mogu oboje
+   uklopiti pored postojećeg centriranja — prelaze u slaganje jedno ispod
+   drugog (isti izgled/boje, samo drugačiji raspored). ── */
 .app-header{background:var(--navy);padding:0 24px}
-.app-header-inner{position:relative;display:flex;align-items:center;height:64px;max-width:1200px;margin:0 auto}
+.app-header-inner{position:relative;display:flex;align-items:center;height:64px;max-width:1800px;margin:0 auto}
 .app-logo{height:44px;width:auto;display:block}
 .app-title{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   margin:0;color:#fff;font-family:var(--font-display);font-weight:800;
   font-size:20px;letter-spacing:.2px;text-align:center;white-space:nowrap;
 }
+@media (max-width:600px){
+  .app-header-inner{flex-direction:column;height:auto;padding:10px 0;gap:4px}
+  .app-logo{height:32px}
+  .app-title{position:static;transform:none;font-size:15px;white-space:normal;max-width:100%}
+}
 
-main{padding:20px 24px;max-width:1200px;margin:0 auto}
+main{padding:20px 24px;max-width:1800px;margin:0 auto}
+@media (max-width:480px){
+  main{padding:14px 12px}
+}
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap}
 
 /* ── Dugmad: navy = primarna akcija (zadržava puni ton, dobija mekan
@@ -73,12 +84,15 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 
 .err{background:#fdecec;border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:6px;margin:12px 0}
 
-/* ── Kartice (raspored po razredu/nastavniku, dashboard) — neumorfna podloga ── */
-.block{margin:22px 0;border-radius:20px;overflow:hidden;background:var(--surface);
+/* ── Kartice (raspored po razredu/nastavniku, dashboard) — neumorfna podloga.
+   SPRINT 06: overflow-x:auto (umjesto samo hidden) da tabela unutra može
+   horizontalno skrolati na uskim ekranima bez da se stisne nečitljivo;
+   overflow-y ostaje hidden da zaobljeni gornji uglovi i dalje sijeku h3 traku. ── */
+.block{margin:22px 0;border-radius:20px;overflow-x:auto;overflow-y:hidden;background:var(--surface);
   box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light)}
 .block h3{margin:0;background:var(--navy);color:#fff;padding:10px 14px;font-size:15px;font-family:var(--font-display)}
 
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;min-width:620px;font-variant-numeric:tabular-nums}
 th,td{border:1px solid #cdd7e2;padding:6px 8px;text-align:center;font-size:12px;height:44px;vertical-align:middle}
 th{background:var(--sky);color:#fff}
 td.time{background:#eef4fb;font-weight:bold;white-space:nowrap}
@@ -94,10 +108,21 @@ td.draggable:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(3,94,16
 td.draggable:active{cursor:grabbing}
 td.drag-target{background:#fff6d8}
 
+/* SPRINT 06: HTML5 drag-and-drop (draggable atribut) nema pouzdanu podršku
+   na dodirnim ekranima — provjereno uživo (dragstart se ne pokreće dodirom).
+   Prikaži umjesto miš-uputstva jasno objašnjenje zašto prevlačenje ne radi
+   na tom uređaju, umjesto da tiho ne radi. (hover:none)+(pointer:coarse)
+   pouzdano prepoznaje dodirne uređaje bez miša, neovisno o širini ekrana. */
+.touch-only-hint{display:none}
+@media (hover:none) and (pointer:coarse){
+  .mouse-only-hint{display:none}
+  .touch-only-hint{display:block}
+}
+
 /* ─────────────────────────────────────────────────────────────
    Wizard ekrani
    ───────────────────────────────────────────────────────────── */
-.wiz{max-width:980px;margin:0 auto}
+.wiz{max-width:1100px;margin:0 auto}
 .wiz-steps{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 22px;border-bottom:2px solid var(--sky);padding-bottom:10px}
 .wiz-step{padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:14px;border:1px solid transparent;background:#fff;color:var(--navy)}
 .wiz-step.active{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -107,11 +132,18 @@ td.drag-target{background:#fff6d8}
 .wiz-panel{
   background:var(--surface);border-radius:20px;padding:22px 26px;margin-bottom:18px;
   box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  overflow-x:auto; /* SPRINT 06: tabele unutra mogu skrolati bez da razvuku panel */
 }
 .wiz-panel h2{margin:0 0 4px;color:var(--navy);font-size:18px;font-family:var(--font-display)}
 .wiz-panel .hint{color:#5a6b7d;font-size:13px;margin:0 0 16px}
 .wiz-field{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
 .wiz-field label{min-width:200px;font-size:13px;color:var(--ink);font-weight:bold}
+@media (max-width:480px){
+  /* SPRINT 06: na uskom ekranu, oznaka+polje jedno pored drugog (200px+160px
+     min-širina) ne staje — slaži ih jedno ispod drugog umjesto sabijanja. */
+  .wiz-field{flex-direction:column;align-items:stretch}
+  .wiz-field label{min-width:0}
+}
 .wiz-field input[type=text],.wiz-field input[type=number],.wiz-field select,.wiz-field textarea{
   border:1px solid #cdd7e2;border-radius:5px;padding:7px 10px;font-size:14px;font-family:inherit;flex:1;min-width:160px;background:#fff;color:var(--ink)}
 .wiz-field input:focus,.wiz-field select:focus,.wiz-field textarea:focus{outline:2px solid var(--sky);border-color:var(--sky)}
@@ -223,3 +255,19 @@ td.drag-target{background:#fff6d8}
   animation-direction: reverse;
 }
 @keyframes l2 {to{rotate: 1turn}}
+
+/* ─────────────────────────────────────────────────────────────
+   SPRINT 06 — dodatna responsive poliranja (BEZ izmjene boja/stila):
+   veći dodirni ciljevi na dodirnim uređajima (minimalno ~44×44px), i
+   sitna prilagođenja razmaka na najužim ekranima.
+   ───────────────────────────────────────────────────────────── */
+@media (hover:none) and (pointer:coarse){
+  button{min-height:44px;padding:12px 20px}
+  .wiz-table .act button{min-height:38px;padding:8px 12px}
+  .wiz-step{min-height:44px;display:flex;align-items:center}
+  .chip{min-height:36px;padding:8px 14px;display:inline-flex;align-items:center}
+}
+@media (max-width:480px){
+  .wiz-panel{padding:16px 16px}
+  .wiz-inline-form{padding:10px}
+}
