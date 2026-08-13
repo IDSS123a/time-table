@@ -6,15 +6,18 @@ import Wizard from "./Wizard.jsx";
 // URL backenda (FastAPI). Postavi u .env kao VITE_API_URL.
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-// SPRINT 03 sigurnosna popravka: backend (main.py) sada zahtijeva HTTP Basic
-// Auth na svakom endpointu osim /health (CORS ne štiti od direktnih poziva
-// mimo browsera — vidi DECISION_LOG.md DL-003). Lozinka se ovdje ne kuca —
-// dolazi iz VITE_BACKEND_PASSWORD (Vercel env var, ugrađuje se u JS pri
-// build-u, isto kao VITE_API_URL). Username se ne provjerava na backendu.
-const BACKEND_PASSWORD = import.meta.env.VITE_BACKEND_PASSWORD || "";
-const AUTH_HEADERS = BACKEND_PASSWORD
-  ? { Authorization: "Basic " + btoa(":" + BACKEND_PASSWORD) }
-  : {};
+// SPRINT 09: lozinka se više NE ugrađuje u JS pri build-u (VITE_BACKEND_
+// PASSWORD, uklonjeno — bilo je vidljivo u bundle-u svakom ko otvori dev
+// tools). Umjesto toga, korisnik je unosi u naš neumorfni login ekran
+// (vidi LoginScreen niže), ona se čuva SAMO u sessionStorage (briše se kad
+// se tab zatvori) i koristi za sve pozive backendu. Backend Basic Auth
+// (main.py, require_auth) ostaje ISTA stvarna sigurnosna granica — ovo
+// mijenja samo KAKO se lozinka traži od korisnika. Username je kozmetički
+// (backend ga ne provjerava), zato se nikad ne šalje.
+const SESSION_KEY = "idss_pwd";
+function authHeader(password) {
+  return password ? { Authorization: "Basic " + btoa(":" + password) } : {};
+}
 
 // ── SPRINT 07: jedna ćelija mreže, i dalje "draggable" I "droppable"
 // istovremeno (isti fizički termin je i moguć izvor i moguć cilj
@@ -264,7 +267,133 @@ function VerdictModal({ verdict, onClose }) {
   );
 }
 
+// ── SPRINT 09: neumorfni login ekran ────────────────────────────────────
+// Zamjenjuje native browser Basic Auth prozorčić (Vercel Edge Middleware,
+// uklonjen ovim sprintom — vidi DECISION_LOG.md). Korisničko ime je
+// kozmetičko (ne provjerava se, ne šalje se nikuda — vidi napomenu uz
+// authHeader iznad); samo lozinka ide u /verify-auth poziv. Greška
+// (netačna lozinka / veza nije uspjela) prikazuje se kroz POSTOJEĆI
+// VerdictModal (isti stil kao odbijena izmjena rasporeda), ne poseban
+// ekran — pozива ga App, LoginScreen samo prikuplja unos.
+function LoginScreen({ onLogin, loading }) {
+  const [username, setUsername] = useState("");
+  const [pwd, setPwd] = useState("");
+
+  function submit(e) {
+    e.preventDefault();
+    if (!pwd || loading) return;
+    onLogin(pwd);
+  }
+
+  return (
+    <div className="login-backdrop">
+      <form className="login-card neu-raised" onSubmit={submit}>
+        <div className="login-logo-wrap">
+          <img className="login-logo" src="https://idss.edu.ba/wp-content/uploads/2024/03/logo_white.png" alt="IDSS logo" />
+        </div>
+        <h2>Raspored časova za IDSS</h2>
+        <p className="hint">Unesi lozinku da nastaviš.</p>
+        <label className="login-field">
+          Korisničko ime
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+          />
+        </label>
+        <label className="login-field">
+          Lozinka
+          <input
+            type="password"
+            value={pwd}
+            onChange={(e) => setPwd(e.target.value)}
+            autoComplete="current-password"
+            autoFocus
+          />
+        </label>
+        <button type="submit" disabled={!pwd || loading}>
+          {loading ? "Provjeravam…" : "Prijavi se"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
+  // ── SPRINT 09: login stanje ─────────────────────────────────────────
+  // password: učitava se iz sessionStorage pri prvom mount-u (prazan string
+  // ako ništa nije sačuvano — tad se odmah prikazuje login ekran).
+  // authChecking: dok se SAČUVANA lozinka (ako postoji) tiho provjerava
+  // protiv backenda prije nego se bilo šta prikaže — pokriva slučaj da je
+  // Direktor promijenio BACKEND_PASSWORD dok je stara sesija još važeća
+  // (bez ovoga bi app "tiho" pucala na prvom pravom pozivu).
+  const [password, setPassword] = useState(() => {
+    try { return sessionStorage.getItem(SESSION_KEY) || ""; } catch { return ""; }
+  });
+  const [authed, setAuthed] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!password) { setAuthChecking(false); return; }
+    (async () => {
+      try {
+        const res = await fetch(`${API}/verify-auth`, { headers: authHeader(password) });
+        if (res.ok) {
+          setAuthed(true);
+        } else {
+          try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+          setPassword("");
+        }
+      } catch {
+        // mrežni problem pri provjeri — fail-closed, isti duh kao backend
+        // (main.py): radije prikaži login ekran nego rizikovati polovičnu
+        // aplikaciju bez potvrđene lozinke.
+        setAuthed(false);
+      } finally {
+        setAuthChecking(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // samo jednom, pri učitavanju
+
+  async function handleLogin(pwd) {
+    setLoginSubmitting(true);
+    try {
+      const res = await fetch(`${API}/verify-auth`, { headers: authHeader(pwd) });
+      if (res.ok) {
+        try { sessionStorage.setItem(SESSION_KEY, pwd); } catch {}
+        setPassword(pwd);
+        setAuthed(true);
+      } else {
+        setVerdict({ kind: "error", title: "Netačna lozinka", messages: ["Provjeri lozinku i pokušaj ponovo."] });
+      }
+    } catch (e) {
+      setVerdict({ kind: "error", title: "Veza nije uspjela", messages: [`Provjeri internet vezu i pokušaj ponovo. (${e})`] });
+    } finally {
+      setLoginSubmitting(false);
+    }
+  }
+
+  // Svi pozivi backendu (osim /verify-auth iznad, koji nema šta da odjavi)
+  // idu kroz ovo — dodaje Authorization zaglavlje, i ako backend odgovori
+  // 401 (lozinka je u međuvremenu promijenjena na Railway-u, ili je sesija
+  // nekako nevažeća), odjavljuje korisnika umjesto da app ostane "zaglavljena"
+  // uz pogrešne/zbunjujuće poruke o grešci veze.
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(`${API}${path}`, {
+      ...options,
+      headers: { ...(options.headers || {}), ...authHeader(password) },
+    });
+    if (res.status === 401) {
+      try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+      setPassword("");
+      setAuthed(false);
+    }
+    return res;
+  }
+
   // SPRINT 02: config se gradi iz wizarda, ne iz fiksnog primjera.
   // Početno stanje = prazno (Wizard.jsx emptyWizard → buildConfig).
   // Wizard poziva onConfig(next) pri svakoj izmjeni.
@@ -326,14 +455,18 @@ export default function App() {
   const [feasibilityLoading, setFeasibilityLoading] = useState(false);
 
   // Provjera izvodivosti kad se config promijeni (debounce 400ms).
+  // SPRINT 09: ne zovi backend prije prijave (authed) — inače bi svaki
+  // (i neprijavljeni) posjetilac odmah trošio jedan neuspio pokušaj iz
+  // rate-limitera na prazno/pogrešno Authorization zaglavlje.
   useEffect(() => {
+    if (!authed) return;
     if (!config || !config.grades || !config.grades.length) return;
     setFeasibilityLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`${API}/feasibility`, {
+        const res = await apiFetch("/feasibility", {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ config }),
         });
         const data = await res.json();
@@ -345,7 +478,7 @@ export default function App() {
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [config]);
+  }, [config, authed]);
 
   // SPRINT 04 loader popravka: ne dozvoli "Generiši" dok traje SVJEŽA provjera
   // izvodivosti (feasibilityLoading) — inače dugme može ostati klikabilno na
@@ -355,9 +488,9 @@ export default function App() {
   async function generate() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/solve`, {
+      const res = await apiFetch("/solve", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config, time_limit_s: 45 }),
       });
       const data = await res.json();
@@ -383,9 +516,9 @@ export default function App() {
     setBusy(true);
     setExportError("");
     try {
-      const res = await fetch(`${API}/export/${kind}`, {
+      const res = await apiFetch(`/export/${kind}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config, lessons }),
       });
       if (!res.ok) {
@@ -432,9 +565,9 @@ export default function App() {
 
     setPendingMove({ grade, src: { day: srcDay, period: srcPeriod }, dst: { day: dstDay, period: dstPeriod } });
     try {
-      const res = await fetch(`${API}/validate-move`, {
+      const res = await apiFetch("/validate-move", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           config, lessons, grade,
           src_day: srcDay, src_period: srcPeriod,
@@ -484,10 +617,21 @@ export default function App() {
   // pokreće feasibilityLoading isto kao svaka druga izmjena).
   const anyLoading = loading || moving || exportingExcel || exportingReport || feasibilityLoading;
 
+  // SPRINT 09: dok se sačuvana lozinka tiho provjerava, ne prikazuj NIŠTA
+  // (ni login ekran ni app) — spriječava kratak "trep" login forme za
+  // korisnika koji je zapravo već prijavljen u ovom tab-u.
+  if (authChecking) {
+    return <LoadingOverlay active={true} />;
+  }
+
   return (
     <>
       <LoadingOverlay active={anyLoading} />
       <VerdictModal verdict={verdict} onClose={() => setVerdict(null)} />
+      {!authed ? (
+        <LoginScreen onLogin={handleLogin} loading={loginSubmitting} />
+      ) : (
+      <>
       <header className="app-header">
         <div className="app-header-inner">
           <img className="app-logo" src="https://idss.edu.ba/wp-content/uploads/2024/03/logo_white.png" alt="IDSS logo" />
@@ -565,6 +709,8 @@ export default function App() {
           </DndContext>
         )}
       </main>
+      </>
+      )}
     </>
   );
 }

@@ -115,6 +115,15 @@ def _feasibility(config: Dict[str, Any]) -> List[str]:
 def health():
     return {"ok": True}
 
+@app.get("/verify-auth", dependencies=[Depends(require_auth)])
+def verify_auth():
+    """SPRINT 09 — tanka omotnica oko POSTOJEĆEG require_auth (nema nove
+    sigurnosne logike, isti standard kao /validate-move oko validate()).
+    Frontend ovo zove PRIJE prikazivanja aplikacije (in-app neumorfni login
+    ekran umjesto browser Basic Auth prozorčića/Vercel middleware-a) da
+    provjeri da li je unesena/sačuvana lozinka tačna."""
+    return {"ok": True}
+
 @app.post("/feasibility", dependencies=[Depends(require_auth)])
 def feasibility(body: SolveBody):
     problems = _feasibility(body.config)

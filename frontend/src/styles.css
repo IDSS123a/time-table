@@ -219,6 +219,31 @@ td.drag-target{background:#fff6d8}
 @keyframes verdict-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 
 /* ─────────────────────────────────────────────────────────────
+   SPRINT 09 — neumorfni login ekran (zamjena za native browser Basic
+   Auth prozorčić / Vercel middleware). Netačna lozinka se javlja kroz
+   POSTOJEĆI VerdictModal iznad, ne posebnim stilom ovdje.
+   ───────────────────────────────────────────────────────────── */
+.login-backdrop{
+  position:fixed;inset:0;background:var(--surface);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.login-card{
+  width:100%;max-width:380px;padding:38px 34px 32px;text-align:center;
+  display:flex;flex-direction:column;gap:14px;
+}
+.login-logo-wrap{background:var(--navy);border-radius:10px;padding:10px 16px;margin:0 auto 4px;display:inline-block}
+.login-logo{height:36px;width:auto;display:block}
+.login-card h2{margin:0;color:var(--navy);font-family:var(--font-display);font-size:19px}
+.login-card .hint{margin:0 0 6px}
+.login-field{display:flex;flex-direction:column;gap:5px;text-align:left;font-size:13px;font-weight:bold;color:var(--ink)}
+.login-field input{
+  border:1px solid #cdd7e2;border-radius:8px;padding:10px 12px;font-size:14px;
+  font-family:inherit;background:#fff;color:var(--ink);font-weight:normal;
+}
+.login-field input:focus{outline:2px solid var(--sky);border-color:var(--sky)}
+.login-card button{margin-top:6px}
+
+/* ─────────────────────────────────────────────────────────────
    Jedinstveni loading overlay — JEDAN loader za SVE pozadinske pozive
    backendu (ne miješati sa verdict prozorom — overlay = "čekamo",
    verdict = "evo odgovora").

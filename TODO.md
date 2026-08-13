@@ -51,6 +51,23 @@
       duboko ugniježđen JSON, negativni brojevi) ponovljen — čisto,
       bez pada/curenja (2026-08-13)
 
+## Sprint 09 — Neumorfni login ekran (2026-08-13)
+
+- [x] Vercel middleware Basic Auth (frontend/middleware.js) uklonjen,
+      zamijenjen in-app neumorfnim login ekranom — vidi DECISION_LOG.md
+      DL-006 (2026-08-13)
+- [x] Backend: `GET /verify-auth` dodan (tanka omotnica oko require_auth),
+      solver.py/validators.py/exports.py netaknuti (2026-08-13)
+- [x] Lozinka se čuva u sessionStorage (ne localStorage), šalje se uz
+      svaki poziv backendu; automatska odjava na 401 (npr. lozinka
+      promijenjena dok je tab otvoren) — testirano uživo (2026-08-13)
+- [ ] **Direktor treba promijeniti `BACKEND_PASSWORD` na Railway-u** na
+      novu lozinku po svom izboru — vidi sprints/SPRINT_09.md HANDOFF za
+      korak-po-korak uputstvo. Claude Code ovo ne može uraditi sam.
+- [ ] (opciono, nije hitno) Obrisati neiskorištene Vercel env varijable
+      `SITE_PASSWORD` i `VITE_BACKEND_PASSWORD` — više se ne koriste
+      nakon ovog sprinta, ali ne štete ako ostanu.
+
 ## Ranije, niži prioritet (nije zaboravljeno, samo čeka red)
 
 - [ ] Ukloniti `frontend/.env` iz git praćenja (higijenska stavka)

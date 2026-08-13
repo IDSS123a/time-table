@@ -228,6 +228,68 @@ bez rukovanja stvarnom lozinkom (ne rukujem lozinkama — vidi napomenu niže).
 exports.py formula injection) implementirane i testirane lokalno,
 spremne za push.
 
+## DL-006 — Sprint 09: neumorfni login ekran zamjenjuje Vercel middleware
+
+**Datum:** 2026-08-13
+**Kontekst:** Direktor je tražio ljepši, prilagođen ekran za prijavu (i
+dalje JEDNA zajednička lozinka, ne pravi višekorisnički sistem) umjesto
+native browser Basic Auth prozorčića koji je do sada iskakao PRIJE nego
+se React app uopšte učita (`frontend/middleware.js`, Vercel Edge
+Middleware, vidi DL-002).
+
+**Promjena mehanizma (svjesna, ne slučajna):**
+- `frontend/middleware.js` (Vercel Edge Middleware, `SITE_PASSWORD`)
+  UKLONJEN. Posljedica: statički frontend fajlovi (HTML/JS/CSS) su sada
+  javno dostupni bez lozinke — bilo ko može otvoriti sajt i VIDJETI
+  prazan login ekran/JS bundle. Ovo je NAMJERNO i u skladu sa sprint
+  zahtjevom ("stvarna zaštita ostaje na backend Basic Auth, ovo je samo
+  promjena KAKO se lozinka traži").
+- STVARNA sigurnosna granica ostaje ISTA: backend `require_auth`
+  (main.py, DL-003/DL-005) i dalje štiti svaki endpoint osim `/health` —
+  bez tačne lozinke se ne može ni provjeriti izvodivost, ni generisati
+  raspored, ni izvesti fajl. Rate-limit (DL-005 #1) i dalje važi.
+- Dodan `GET /verify-auth` (main.py) — tanka omotnica oko POSTOJEĆEG
+  `require_auth`, ista sigurnosna logika, nema nove provjere.
+- Frontend: build-time ugrađena lozinka (`VITE_BACKEND_PASSWORD`,
+  Vercel env var) UKLONJENA — bila je vidljiva u javnom JS bundle-u
+  (svako ko otvori dev tools/view-source može je pročitati). Ovo je
+  usput i sigurnosno poboljšanje, ne samo kozmetička promjena. Zamijenjena
+  in-app login ekranom (`LoginScreen`, App.jsx) — lozinka se unosi pri
+  svakoj novoj sesiji, čuva SAMO u `sessionStorage` (briše se kad se tab
+  zatvori), i šalje kao Basic Auth header uz svaki poziv backendu.
+- Ako backend ikad vrati 401 na autentifikovan poziv (npr. Direktor
+  promijeni `BACKEND_PASSWORD` dok je neki tab već otvoren), frontend
+  automatski odjavljuje (briše sessionStorage, vraća login ekran) umjesto
+  da app ostane "zaglavljena" uz pogrešne poruke o grešci veze —
+  testirano uživo (vidi HANDOFF sprints/SPRINT_09.md).
+- Korisničko ime na login ekranu je čisto kozmetičko — ne šalje se
+  backendu, ne provjerava se (isto kao i ranije).
+
+**Posljedica za Vercel env varijable:** `SITE_PASSWORD` i
+`VITE_BACKEND_PASSWORD` više se NE koriste (middleware i build-time
+ugrađivanje su uklonjeni) — mogu se obrisati iz Vercel Project Settings
+radi urednosti, nije hitno/obavezno (ne štete ako ostanu, samo su mrtav
+kod). `BACKEND_PASSWORD` (Railway) OSTAJE jedina stvarna lozinka koja
+nešto štiti.
+
+**Testirano lokalno (backend na localhost:8080, frontend dev server):**
+netačna lozinka → verdict prozor "Netačna lozinka" (isti stil kao
+odbijena izmjena rasporeda), forma ostaje; tačna lozinka → app se
+prikazuje; sessionStorage (NE localStorage) čuva lozinku; reload istog
+taba NE traži login ponovo (tiha provjera sačuvane lozinke prije prikaza);
+promjena `BACKEND_PASSWORD` na backendu dok je tab otvoren → sljedeći
+poziv (automatska provjera izvodivosti) vraća 401 → app automatski
+odjavljuje i vraća login ekran, sessionStorage očišćen; ponovna prijava
+novom lozinkom radi. Mobilni prikaz (375px) provjeren — kartica se
+uklapa bez horizontalnog overflow-a. `git diff --stat`: samo
+`.claude/launch.json`, `backend/main.py`, `frontend/src/App.jsx`,
+`frontend/src/styles.css` promijenjeni + `frontend/middleware.js`
+obrisan; `solver.py`/`validators.py`/`exports.py` netaknuti.
+
+**Preostalo (nije kod, Direktorova radnja):** promjena vrijednosti
+`BACKEND_PASSWORD` na Railway-u — vidi HANDOFF u sprints/SPRINT_09.md
+za korak-po-korak uputstvo.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami
