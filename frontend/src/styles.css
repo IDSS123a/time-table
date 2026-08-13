@@ -119,8 +119,10 @@ td.drag-target{background:#fff6d8}
    ───────────────────────────────────────────────────────────── */
 .wiz{max-width:1100px;margin:0 auto}
 .wiz-steps{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 22px;border-bottom:2px solid var(--sky);padding-bottom:10px}
-.wiz-step{padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:14px;border:1px solid transparent;background:#fff;color:var(--navy)}
+.wiz-step{padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:14px;border:1px solid transparent;background:#fff;color:var(--navy);transition:background .12s ease, transform .12s ease}
+.wiz-step:hover{background:#eef4fb;transform:translateY(-1px)}
 .wiz-step.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.wiz-step.active:hover{background:var(--navy)}
 .wiz-step.done{background:#eef4fb;color:var(--navy);border-color:var(--sky)}
 .wiz-step .num{display:inline-block;width:20px;height:20px;line-height:20px;border-radius:50%;background:var(--sky);color:#fff;text-align:center;font-size:12px;margin-right:6px}
 .wiz-step.active .num{background:var(--yellow);color:var(--ink)}
@@ -143,9 +145,11 @@ td.drag-target{background:#fff6d8}
   border:1px solid #cdd7e2;border-radius:5px;padding:7px 10px;font-size:14px;font-family:inherit;flex:1;min-width:160px;background:#fff;color:var(--ink)}
 .wiz-field input:focus,.wiz-field select:focus,.wiz-field textarea:focus{outline:2px solid var(--sky);border-color:var(--sky)}
 .wiz-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-.chip{background:var(--sky);color:#fff;border:0;border-radius:14px;padding:4px 12px;font-size:12px;cursor:pointer}
+.chip{background:var(--sky);color:#fff;border:0;border-radius:14px;padding:4px 12px;font-size:12px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
 .chip.off{background:#eef4fb;color:var(--navy);border:1px solid #cdd7e2}
 .chip.danger{background:var(--red)}
+.chip:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 3px 8px rgba(3,94,161,.28)}
+.chip:active:not(:disabled){transform:translateY(0)}
 .wiz-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;font-variant-numeric:tabular-nums}
 .wiz-table th{background:var(--navy);color:#fff;padding:7px 9px;text-align:left;font-size:12px}
 .wiz-table td{border:1px solid #e2e9f0;padding:6px 9px;vertical-align:middle}
@@ -159,7 +163,7 @@ td.drag-target{background:#fff6d8}
 .wiz-nav{display:flex;justify-content:space-between;align-items:center;margin:18px 0;flex-wrap:wrap;gap:10px}
 .wiz-summary{background:#eef4fb;border-left:4px solid var(--navy);padding:12px 16px;border-radius:5px;font-size:13px;margin:14px 0}
 .wiz-summary b{color:var(--navy)}
-.wiz-summary .ok{color:#1a7a3a;font-weight:bold}
+.wiz-summary .ok{color:var(--sky);font-weight:bold}
 .wiz-summary .bad{color:var(--red);font-weight:bold}
 .wiz-feaslist{margin:6px 0;padding-left:20px}
 .wiz-feaslist li{color:var(--red);margin:3px 0;font-size:13px}

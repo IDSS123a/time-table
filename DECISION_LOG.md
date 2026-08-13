@@ -290,6 +290,78 @@ obrisan; `solver.py`/`validators.py`/`exports.py` netaknuti.
 `BACKEND_PASSWORD` na Railway-u — vidi HANDOFF u sprints/SPRINT_09.md
 za korak-po-korak uputstvo.
 
+## DL-007 — Sprint 10: filigransko poliranje (nalazi i popravke)
+
+**Datum:** 2026-08-13
+**Kontekst:** Završni pregled postojećeg dizajna (Sprint 05/06/07/09),
+BEZ novog dizajna — "sve tačno poravnato, dosljedno, bez sitnih
+nesavršenosti" (sprints/SPRINT_10.md). Backend NIJE dirano (potvrđeno
+`git diff --stat` — samo `frontend/src/App.jsx`, `Wizard.jsx`,
+`styles.css` promijenjeni).
+
+**Nalazi i popravke (konkretni, provjerljivi — ne subjektivna nagađanja):**
+1. **Boja van zvanične palete** — `#1a7a3a` (zelena) korištena za "✓
+   Izvodivo"/"tačno" tekst u wizardu (`wiz-summary .ok`, i inline u
+   Wizard.jsx za razliku sume časova) — jedina boja u cijeloj aplikaciji
+   koja nije izvedena iz palete (navy/sky/yellow/red/ink). Popravka:
+   zamijenjena sa `var(--sky)`, koji već nosi značenje "prihvaćeno/
+   uspjeh" u VerdictModal-u — dosljednije semantički, ne samo vizuelno.
+   Potvrđeno uživo: computed color sada `rgb(8,171,230)` (= --sky) na
+   svih 9 redova provjere izvodivosti.
+2. **`.chip` (chip-dugmad — periodi, blok/jutarnji razredi, razrednik
+   svaki dan) nije imao NIKAKVO hover stanje** — jedini klikabilni tip
+   elementa u aplikaciji bez vizuelne povratne informacije na hover, za
+   razliku od `button` i draggable ćelija. Dodano: lift + sjenka na
+   hover, tranzicija (isti obrazac kao dugmad, .12s ease).
+3. **`.wiz-step` (koraci wizarda A–Napredno) bili su obični `<div>` bez
+   hover stanja I bez tastaturnog pristupa** — nisu se mogli dosegnuti
+   Tab-om niti aktivirati Enter/Space (samo klik mišem/dodirom). Popravka:
+   `role="button"`, `tabIndex={0}`, `onKeyDown` (Enter/Space), `aria-
+   current` za aktivni korak, + hover stil. Potvrđeno uživo: koraci se
+   sada čitaju kao `button` u accessibility stablu.
+4. **Nedosljedne ikonice na dugmadima iste kategorije akcije** — "Izvezi
+   Excel"/"Izvezi izvještaj" nisu imali ikonicu dok "⬇️ Izvezi CSV" (u
+   dashboardu, ista kategorija — preuzimanje fajla) jeste. Popravka:
+   dodato ⬇️ objema, dovršava već postojeći obrazac (ne novi), isti kao
+   💾/📂 na Sačuvaj/Učitaj.
+
+**Provjereno uživo (lokalni backend + frontend dev server), bez nalaza
+koji bi tražili izmjenu:**
+- Svih 6 koraka wizarda (A–Napredno) + login ekran + mreža rasporeda
+  (po razredu i po nastavniku) + dashboard opterećenja — BEZ horizontalnog
+  document-level overflow-a na 375px i 1280px (provjereno skriptom koja
+  poredi `document.documentElement.scrollWidth` sa `window.innerWidth`
+  na svakom ekranu; tabele unutar `.wiz-panel`/`.block` namjerno
+  horizontalno skroluju SAMO unutar svog kontejnera — Sprint 06 odluka,
+  ne bug).
+- Puna regresija: pravi 9-razredni config (real solve, 315 časova) +
+  verdict prozor (uspjeh) + mreža + dashboard — sve renderuje ispravno.
+- Loader overlay, verdict prozor (uspjeh/greška), login ekran — vizuelno
+  pregledani, dosljedni sa ostatkom (isti neumorfni obrazac, ista paleta).
+
+**Nije mijenjano (van opsega ili nedovoljno objektivno da se mijenja bez
+Direktorovog estetskog suda):**
+- Razmaci (padding/margin/border-radius) VARIRAJU kroz aplikaciju (npr.
+  border-radius 5px/6px/8px na različitim malim elementima) — organski
+  nastalo kroz Sprint 02–09, ali razlika je ispod praga vizuelne
+  percepcije i puna standardizacija bi rizikovala nepotrebne regresije
+  bez jasne dobiti. Nije dirano.
+- Emoji/simboli izbor (💾📂✅🔄📊⬇️ nasuprot ✓⊘ u verdict prozoru) —
+  postojeći, već odobreni obrazac (Sprint 05), različiti simboli za
+  različite kontekste namjerno, ne nedosljednost.
+
+**Napomena o metodologiji:** `computer` (klik/hover) alat u ovom
+okruženju je nepouzdan na mobilnoj (resized) veličini prozora — koristio
+sam JS-simulirane klikove i computed-style provjere kao pouzdanu
+zamjenu (isti pristup kao ranije za screenshot-ove, koji su takođe
+nedostupni u ovom okruženju).
+
+**Status:** Popravke #1–4 implementirane i testirane uživo. Sprint 10
+kriterijum "Direktor lično pregleda na svom uređaju prije potvrde
+zatvaranja sprinta" NIJE i ne može biti ispunjen od strane Claude Code-a
+— ovo je estetski sud koji zahtijeva Direktorov pregled prije nego se
+sprint smatra zatvorenim.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

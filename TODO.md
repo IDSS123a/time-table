@@ -68,6 +68,22 @@
       `SITE_PASSWORD` i `VITE_BACKEND_PASSWORD` — više se ne koriste
       nakon ovog sprinta, ali ne štete ako ostanu.
 
+## Sprint 10 — Filigransko poliranje (2026-08-13)
+
+- [x] Boja van palete (#1a7a3a zelena → var(--sky)) popravljena na 2
+      mjesta (styles.css, Wizard.jsx) — vidi DECISION_LOG.md DL-007 (2026-08-13)
+- [x] `.chip` hover stanje dodano (nije postojalo) (2026-08-13)
+- [x] `.wiz-step` hover + tastaturni pristup (role/tabIndex/onKeyDown)
+      dodano — ranije nije bilo moguće Tab-om doći do koraka wizarda (2026-08-13)
+- [x] Ikonice na "Izvezi Excel"/"Izvezi izvještaj" dodane radi
+      dosljednosti sa "⬇️ Izvezi CSV" (2026-08-13)
+- [x] Svih 6 koraka wizarda + login + mreža + dashboard provjereni uživo
+      na 375px/1280px — bez horizontalnog overflow-a (2026-08-13)
+- [ ] **ČEKA Direktorov lični pregled na svom uređaju** — sprint kriterijum
+      eksplicitno traži estetski sud koji ACA ne može sam donijeti. Dok se
+      to ne potvrdi, sprint se ne smatra formalno zatvorenim (iako je kod
+      spreman i push-ovan).
+
 ## Ranije, niži prioritet (nije zaboravljeno, samo čeka red)
 
 - [ ] Ukloniti `frontend/.env` iz git praćenja (higijenska stavka)

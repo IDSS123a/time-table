@@ -397,7 +397,17 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       {/* Step traka */}
       <div className="wiz-steps">
         {stepNames.map((n, i) => (
-          <div key={n} className={`wiz-step ${i === step ? "active" : i < step ? "done" : ""}`} onClick={() => goToStep(i)}>
+          <div
+            key={n}
+            className={`wiz-step ${i === step ? "active" : i < step ? "done" : ""}`}
+            onClick={() => goToStep(i)}
+            role="button"
+            tabIndex={0}
+            aria-current={i === step ? "step" : undefined}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToStep(i); }
+            }}
+          >
             <span className="num">{i + 1}</span>{n}
           </div>
         ))}
@@ -751,7 +761,7 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
                     <td><b>{g}</b></td>
                     <td>{sum}</td>
                     <td>{totalSlots}</td>
-                    <td className={diff === 0 ? "ok" : "bad"} style={{ fontWeight: "bold", color: diff === 0 ? "#1a7a3a" : "var(--red)" }}>{diff > 0 ? `+${diff}` : diff}</td>
+                    <td className={diff === 0 ? "ok" : "bad"} style={{ fontWeight: "bold", color: diff === 0 ? "var(--sky)" : "var(--red)" }}>{diff > 0 ? `+${diff}` : diff}</td>
                   </tr>
                 );
               })}

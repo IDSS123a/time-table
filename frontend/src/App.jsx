@@ -665,10 +665,10 @@ export default function App() {
           {lessons.length > 0 && (
             <>
               <button className="secondary" onClick={() => exportFile("excel")} disabled={exportingExcel}>
-                Izvezi Excel
+                ⬇️ Izvezi Excel
               </button>
               <button className="secondary" onClick={() => exportFile("report")} disabled={exportingReport}>
-                Izvezi izvještaj
+                ⬇️ Izvezi izvještaj
               </button>
               <button className="secondary" onClick={() => setShowDashboard((v) => !v)}>
                 {showDashboard ? "◀ Nazad na raspored" : "📊 Dashboard opterećenja"}
