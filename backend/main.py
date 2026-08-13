@@ -5,8 +5,8 @@ Povezuje gotovo jezgro (solver/validators/exports). NE mijenja logiku jezgra.
 Radi pod sistemom COMMANDER — primijeni COMMANDER inženjerska pravila.
 Pokretanje lokalno:  uvicorn main:app --reload --port 8080
 """
-import os, tempfile, secrets
-from fastapi import FastAPI, HTTPException, Depends, status
+import os, tempfile, secrets, time
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -17,7 +17,14 @@ from solver import solve_timetable
 from validators import validate, validate_config
 from exports import export_excel, export_report
 
-app = FastAPI(title="IDSS Timetable API", version="1.0")
+# ── SPRINT 08 sigurnosni audit ──────────────────────────────────────────
+# FastAPI automatski pravi /docs (Swagger UI), /redoc, /openapi.json — bez
+# ikakve lozinke (nisu bili obuhvaćeni require_auth dependency-jem, koji se
+# dodaje PO RUTI, ne globalno). Nalaz: bili javno dostupni, izlagali punu
+# API šemu. Frontend ne treba interaktivnu dokumentaciju (zove poznate JSON
+# rute direktno) — najjednostavnija i najsigurnija popravka je potpuno
+# isključiti generisanje, ne dodavati auth na framework-generisane rute.
+app = FastAPI(title="IDSS Timetable API", version="1.0", docs_url=None, redoc_url=None, openapi_url=None)
 
 # CORS: za razvoj dozvoli sve; u produkciji suzi na URL frontenda.
 app.add_middleware(
@@ -36,16 +43,47 @@ app.add_middleware(
 # podešen, SVI zaštićeni pozivi vraćaju 500 umjesto da prođu bez provjere.
 _security = HTTPBasic()
 
-def require_auth(credentials: HTTPBasicCredentials = Depends(_security)):
+# ── SPRINT 08 sigurnosni audit: zaštita od pogađanja lozinke (brute-force) ──
+# Prije ovoga: NIJE postojalo nikakvo ograničenje broja pokušaja — neko je
+# mogao probati neograničen broj lozinki. In-memory brojač po IP adresi
+# (baza nije potrebna za ovaj obim; Railway restart čisti brojač, prihvatljivo
+# — to je RIJETKO i samo privremeno olakšava napadaču, ne otvara trajnu rupu).
+# Namjerno se NE broje uspješni pokušaji (samo neuspjeli) — legitiman
+# korisnik koji stalno kuca tačnu lozinku se nikad ne blokira.
+_RATE_LIMIT_WINDOW_S = 300   # 5 minuta
+_RATE_LIMIT_MAX_FAILS = 10   # max neuspjelih pokušaja po IP u tom prozoru
+_failed_auth_attempts: Dict[str, list] = {}
+
+def _client_ip(request: Request) -> str:
+    # Railway je iza reverse proxy-ja — stvarna IP adresa klijenta je u
+    # X-Forwarded-For (prvi unos), ne u request.client.host (koji bi bio
+    # proxy-jeva interna adresa).
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+def require_auth(request: Request, credentials: HTTPBasicCredentials = Depends(_security)):
+    ip = _client_ip(request)
+    now = time.time()
+    recent_fails = [t for t in _failed_auth_attempts.get(ip, []) if now - t < _RATE_LIMIT_WINDOW_S]
+    if len(recent_fails) >= _RATE_LIMIT_MAX_FAILS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Previše neuspjelih pokušaja prijave. Pokušaj ponovo za nekoliko minuta.",
+        )
     expected = os.environ.get("BACKEND_PASSWORD")
     if not expected:
         raise HTTPException(500, "Server nije podešen: nedostaje BACKEND_PASSWORD environment varijabla.")
     if not secrets.compare_digest(credentials.password, expected):
+        recent_fails.append(now)
+        _failed_auth_attempts[ip] = recent_fails
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Pogrešna lozinka.",
             headers={"WWW-Authenticate": "Basic"},
         )
+    _failed_auth_attempts.pop(ip, None)  # uspjeh — očisti brojač za taj IP
     return True
 
 class SolveBody(BaseModel):

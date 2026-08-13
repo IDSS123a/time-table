@@ -153,6 +153,64 @@ sazna goli Railway URL (npr. iz javnog GitHub repoa/README-a).
 
 **Status:** Aktivno, potvrđeno i testirano.
 
+## DL-005 — Sprint 08 sigurnosni audit: nalazi i popravke
+
+**Datum:** 2026-08-13
+**Kontekst:** Rutinski sigurnosni audit produkcije (sprints/SPRINT_08.md),
+7 stavki, provjereno uživo na živom Railway/Vercel gdje god je bilo moguće
+bez rukovanja stvarnom lozinkom (ne rukujem lozinkama — vidi napomenu niže).
+
+**Nalazi i odluke:**
+1. **Rate-limiting nije postojao** — dodano u `main.py`: in-memory brojač
+   neuspjelih pokušaja prijave po IP adresi (X-Forwarded-For), max 10 u 5
+   minuta, potom 429. Uspješna prijava briše brojač za taj IP. Testirano
+   uživo (lokalno, isti kod kao produkcija): 10× pogrešna lozinka → 401,
+   11. → 429; tačna lozinka odmah nakon par pogrešnih i dalje prolazi
+   (200) dok se prag ne dostigne.
+2. **`/docs`, `/openapi.json`, `/redoc` bili javno dostupni bez lozinke**
+   (FastAPI ih sam generiše; `require_auth` je bio vezan PO RUTI, ne
+   globalno, pa framework-generisane rute nisu bile obuhvaćene). Popravka:
+   potpuno isključeni (`docs_url=None, redoc_url=None, openapi_url=None`)
+   — frontend ne treba interaktivnu dokumentaciju, najjednostavnije i
+   najsigurnije je ugasiti ih. Potvrđeno uživo prije popravke (200 na sva
+   tri, `/openapi.json` vraćao punu šemu API-ja) i lokalno poslije (404).
+3. **Formula injection u Excel izvozu (`exports.py`) — STVARAN mehanizam
+   rizika potvrđen** (openpyxl string koji počinje sa `=` tretira kao
+   formulu), ali `exports.py` NIJE mijenjan — sprint eksplicitno traži
+   "SAMO čitati, ne mijenjati bez odobrenja" za taj fajl. Prijavljeno
+   Direktoru s preporukom (apostrof-prefiks escape prije upisa u ćeliju),
+   čeka odobrenje.
+4. Sve ostalo provjereno ČISTO na živoj produkciji ili lokalno (identičan
+   kod, gdje je autentifikacija spriječila test na produkciji bez
+   rukovanja stvarnom lozinkom): HTTPS enforced (Railway 301, Vercel 308),
+   `ALLOWED_ORIGINS` tačan (lažan Origin → CORS odbijen, pravi Vercel
+   Origin → dozvoljen), fail-closed auth i dalje radi, malformisan/
+   ekstreman JSON (prazno tijelo, nevaljan JSON, string umjesto objekta,
+   100.000-karakterni string, 20.000 nivoa ugniježđen JSON, negativni
+   brojevi, SQL/script injection stringovi kao imena) — svi vraćaju čiste
+   poruke bez Python stack trace-a/putanja/verzija biblioteka, bez pada
+   servera. `npm audit` (frontend): 2 poznata nalaza, oba u esbuild/vite
+   RAZVOJNOM serveru (ne produkcijski build), postojala prije ovog
+   sprinta, popravka bi tražila breaking vite upgrade — NIJE urađena bez
+   javljanja. `pip-audit -r requirements.txt` (backend): 0 poznatih
+   ranjivosti.
+5. **Napomena o metodologiji:** ne rukujem stvarnim produkcijskim
+   lozinkama (BACKEND_PASSWORD/SITE_PASSWORD) — ni da ih tražim od
+   Direktora, ni da ih unosim. Zbog toga su testovi koji zahtijevaju
+   VALJANU autentifikaciju (curenje informacija na zaštićenim rutama,
+   injection napadi na /solve i /feasibility) rađeni protiv LOKALNE
+   instance sa IDENTIČNIM kodom kao produkcija (main.py/solver.py/
+   validators.py bez razlike po okruženju) — rezultati su reprezentativni
+   za produkciju. Testovi koji NE zahtijevaju auth (401/429 ponašanje,
+   CORS, HTTPS, /docs izloženost, /health) rađeni su direktno protiv
+   živog Railway/Vercel URL-a.
+6. Repo je i dalje javan (DL-002) — Direktor je već ranije svjesno
+   odlučio da ostane tako (2026-08-10); ovaj audit samo ponavlja
+   podsjetnik, ne mijenja odluku.
+
+**Status:** Popravke #1 i #2 implementirane, testirane lokalno, spremne
+za push. Popravka #3 (exports.py) čeka eksplicitno odobrenje Direktora.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

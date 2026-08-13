@@ -31,6 +31,28 @@
       referenci (Sprint, USTAV, Faza, itd.) vidljivih korisniku (2026-08-12,
       popis izmijenjenih tekstova u sprints/SPRINT_05.md HANDOFF napomeni)
 
+## Sprint 08 — Sigurnosni audit (2026-08-13)
+
+- [x] Autentifikacija ponovo potvrđena uživo na produkciji (401/401/200/
+      fail-closed) + dodan rate-limit (10 pokušaja/5min po IP, bio potpuno
+      odsutan) — vidi DECISION_LOG.md DL-005 (2026-08-13)
+- [x] Mrežna sigurnost: HTTPS enforced (oba), ALLOWED_ORIGINS tačan —
+      potvrđeno uživo na produkciji (2026-08-13)
+- [x] Curenje informacija: malformisan/ekstreman JSON ne curi stack
+      trace; `/docs`+`/openapi.json`+`/redoc` NAĐENI javno dostupni bez
+      lozinke — popravljeno, isključeni (2026-08-13)
+- [ ] **Excel formula injection (exports.py) — ČEKA ODOBRENJE.** Stvaran
+      mehanizam potvrđen (openpyxl tretira `=...` kao formulu). Predložen
+      apostrof-prefiks escape. NIJE mijenjano bez izričitog "da" — pravilo
+      sprinta za taj fajl.
+- [x] Zavisnosti provjerene: npm audit (2 postojeća, dev-server only,
+      nepovezano sa ovim sprintom), pip-audit (0 nalaza) (2026-08-13)
+- [x] Podsjetnik dat Direktoru o javnosti repoa (odluka ostaje njegova,
+      DL-002) (2026-08-13)
+- [x] Uzorak ranijih napada (injection stringovi, ekstremno dugi string,
+      duboko ugniježđen JSON, negativni brojevi) ponovljen — čisto,
+      bez pada/curenja (2026-08-13)
+
 ## Ranije, niži prioritet (nije zaboravljeno, samo čeka red)
 
 - [ ] Ukloniti `frontend/.env` iz git praćenja (higijenska stavka)
