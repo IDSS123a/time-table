@@ -120,25 +120,34 @@ Nalazi (po stavci 1-7):
    /solve) — vidi DECISION_LOG.md DL-005 tačka 5 za objašnjenje zašto
    (ne rukujem produkcijskom lozinkom). Sve čisto, bez pada/curenja.
 
-Popravljeno (main.py, testirano lokalno prije push-a, spremno za deploy):
+Popravljeno (testirano lokalno, main.py deo push-ovan i re-provjeren uživo
+na Railway-u):
 - Rate-limiting: in-memory brojač neuspjelih pokušaja po IP
   (X-Forwarded-For), 10/5min, potom 429. Uspjeh briše brojač. Testirano:
   10× pogrešno -> 401, 11. -> 429; tačna lozinka nakon par pogrešnih i
   dalje 200 (dok se prag ne dostigne).
 - /docs, /redoc, /openapi.json potpuno isključeni (docs_url=None,
   redoc_url=None, openapi_url=None) — bili javno dostupni, sad 404.
+- exports.py: Direktor odobrio 2026-08-13 ("Odobravam popravku Excel
+  formula injection-a — dodaj apostrof zaštitu kako si predložio").
+  Dodana `_safe()` funkcija — apostrof-prefiks za tekst koji počinje
+  =, +, -, @ prije upisa u Excel ćeliju, primijenjeno na svih 8 mjesta
+  u export_excel gdje config/lekcije tekst ide u ćeliju. export_report
+  (.docx) namjerno nedirana (Word ne izvršava formule iz teksta).
+  Testirano: zlonamjerni unosi u imenima nastavnika/predmeta/dana/
+  vremena -> apostrof dodan u izlaznom .xlsx-u (0 nezaštićenih ćelija u
+  adversarial config-u); benigni unosi nepromijenjeni; puna regresija sa
+  stvarnim 9-razrednim config-om (315 časova) prolazi za oba izvoza.
+  git diff --stat: samo exports.py promijenjen, solver.py/validators.py
+  netaknuti. Vidi DECISION_LOG.md DL-005 tačka 3.
 
-Preporučeno ali NE urađeno (čeka odluku Direktora):
-- exports.py: dodati apostrof-prefiks escape za ćelije koje počinju
-  =, +, -, @ (formula injection zaštita). Mali, izolovan fix (par linija
-  u export_excel), ali NE dirati bez "da" — vidi DECISION_LOG.md DL-005
-  tačka 3.
+Preostalo, otvoreno (nije blokirajuće, samo na uvid):
 - npm audit nalazi (esbuild/vite dev-server) — popravka je breaking
   vite major upgrade, procijenjeno da nije hitno (ne utiče na
   produkcijski build), ali javljeno na uvid.
 - Javnost GitHub repoa — i dalje otvoreno pitanje iz DL-002, samo
   ponovljen podsjetnik, Direktorova odluka.
 
-Next: TBD po dogovoru s Direktorom — najvjerovatnije exports.py
-odobrenje, zatim push main.py popravki i re-provjera na živom Railway-u.
+Next: exports.py popravku push-ovati i (opciono) potvrditi na živoj
+produkciji generisanjem stvarnog Excel izvoza sa realnim podacima.
 ```

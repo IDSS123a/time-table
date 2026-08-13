@@ -12,6 +12,18 @@ except Exception:
 
 PAL={"navy":"035EA1","blue":"08ABE6","yellow":"FFCB29","red":"E8262C","black":"000000"}
 
+def _safe(v):
+    """SPRINT 08 sigurnosna popravka — Excel formula injection zaštita.
+    Tekst iz config-a (imena nastavnika/predmeta, dani, vremena časova...)
+    ide direktno u ćelije. Ako takav tekst počne znakom =, +, - ili @,
+    Excel (i slični programi) ga pri otvaranju fajla može protumačiti kao
+    formulu, ne kao običan tekst — poznat napad ("CSV/Excel injection").
+    Dodavanje apostrofa ispred takvog teksta ga prisiljava da ostane
+    obična tekstualna vrijednost. Brojevi/None prolaze nepromijenjeni."""
+    if isinstance(v, str) and v[:1] in ("=", "+", "-", "@"):
+        return "'" + v
+    return v
+
 def _grid(lessons, key):
     g=collections.defaultdict(dict)
     for L in lessons: g[L[key]][(L["day"],L["period"])]=L
@@ -59,20 +71,20 @@ def export_excel(lessons, config, path):
     r=1; byt=_grid_multi(lessons,"teacher")
     for t in teachers:
         ws.merge_cells(start_row=r,start_column=1,end_row=r,end_column=1+len(D))
-        cc=ws.cell(r,1,f"{t}   ·   {sum(1 for L in lessons if L['teacher']==t)} časova")
+        cc=ws.cell(r,1,_safe(f"{t}   ·   {sum(1 for L in lessons if L['teacher']==t)} časova"))
         cc.font=Font(name="Arial",bold=True,color="FFFFFF"); cc.fill=HF; cc.alignment=Alignment("left","center")
         for k in range(1,2+len(D)): ws.cell(r,k).fill=HF
         r+=1
         ws.cell(r,1,"Čas").font=wf; ws.cell(r,1).fill=DF; ws.cell(r,1).border=B; ws.cell(r,1).alignment=C
         for i,d in enumerate(D):
-            x=ws.cell(r,2+i,d); x.font=wf; x.fill=DF; x.border=B; x.alignment=C
+            x=ws.cell(r,2+i,_safe(d)); x.font=wf; x.fill=DF; x.border=B; x.alignment=C
         r+=1
         for p in P:
-            ws.cell(r,1,f"{p}. {T.get(str(p),'')}").font=f; ws.cell(r,1).border=B; ws.cell(r,1).alignment=C
+            ws.cell(r,1,_safe(f"{p}. {T.get(str(p),'')}")).font=f; ws.cell(r,1).border=B; ws.cell(r,1).alignment=C
             for i,d in enumerate(D):
                 cell = byt[t].get((d,p), [])
                 txt = _cell_label(cell)
-                x=ws.cell(r,2+i,txt); x.font=f; x.border=B; x.alignment=C
+                x=ws.cell(r,2+i,_safe(txt)); x.font=f; x.border=B; x.alignment=C
                 if any(L["subj"]=="Nacharbeit" for L in cell): x.fill=NF
             r+=1
         r+=1
@@ -83,20 +95,20 @@ def export_excel(lessons, config, path):
     for g in config["grades"]:
         wk = sum(1 for L in lessons if L["grade"]==g)
         ws2.merge_cells(start_row=r,start_column=1,end_row=r,end_column=1+len(D))
-        cc=ws2.cell(r,1,f"{g}. RAZRED   ·   razrednik: {HR.get(g,'')}   ·   {wk} časova sedmično")
+        cc=ws2.cell(r,1,_safe(f"{g}. RAZRED   ·   razrednik: {HR.get(g,'')}   ·   {wk} časova sedmično"))
         cc.font=Font(name="Arial",bold=True,color="FFFFFF"); cc.fill=HF; cc.alignment=Alignment("left","center")
         for k in range(1,2+len(D)): ws2.cell(r,k).fill=HF
         r+=1
         ws2.cell(r,1,"Čas").font=wf; ws2.cell(r,1).fill=DF; ws2.cell(r,1).border=B; ws2.cell(r,1).alignment=C
         for i,d in enumerate(D):
-            x=ws2.cell(r,2+i,d); x.font=wf; x.fill=DF; x.border=B; x.alignment=C
+            x=ws2.cell(r,2+i,_safe(d)); x.font=wf; x.fill=DF; x.border=B; x.alignment=C
         r+=1
         for p in P:
-            ws2.cell(r,1,f"{p}. {T.get(str(p),'')}").font=f; ws2.cell(r,1).border=B; ws2.cell(r,1).alignment=C
+            ws2.cell(r,1,_safe(f"{p}. {T.get(str(p),'')}")).font=f; ws2.cell(r,1).border=B; ws2.cell(r,1).alignment=C
             for i,d in enumerate(D):
                 L=byg[g].get((d,p)); txt=""
                 if L: txt=f"{L['subj']}\n{L['teacher'].split()[0]}"
-                x=ws2.cell(r,2+i,txt); x.font=f; x.border=B; x.alignment=C
+                x=ws2.cell(r,2+i,_safe(txt)); x.font=f; x.border=B; x.alignment=C
                 if L and L["subj"]=="Nacharbeit": x.fill=NF
             ws2.row_dimensions[r].height=30
             r+=1

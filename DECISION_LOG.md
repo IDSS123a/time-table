@@ -176,10 +176,26 @@ bez rukovanja stvarnom lozinkom (ne rukujem lozinkama — vidi napomenu niže).
    tri, `/openapi.json` vraćao punu šemu API-ja) i lokalno poslije (404).
 3. **Formula injection u Excel izvozu (`exports.py`) — STVARAN mehanizam
    rizika potvrđen** (openpyxl string koji počinje sa `=` tretira kao
-   formulu), ali `exports.py` NIJE mijenjan — sprint eksplicitno traži
-   "SAMO čitati, ne mijenjati bez odobrenja" za taj fajl. Prijavljeno
-   Direktoru s preporukom (apostrof-prefiks escape prije upisa u ćeliju),
-   čeka odobrenje.
+   formulu). Prijavljeno Direktoru s preporukom (apostrof-prefiks escape
+   prije upisa u ćeliju); Direktor odobrio 2026-08-13 ("Odobravam popravku
+   Excel formula injection-a — dodaj apostrof zaštitu kako si predložio").
+   **Implementirano:** dodana `_safe()` funkcija u `exports.py` — svaki
+   string koji počinje sa `=`, `+`, `-` ili `@` dobija apostrof-prefiks
+   prije upisa u ćeliju (brojevi/None prolaze nepromijenjeno). Primijenjeno
+   na svih 8 mjesta u `export_excel` gdje tekst iz config-a/lekcija ide u
+   ćeliju (zaglavlje nastavnika, nazivi dana, vremena časova, sadržaj
+   ćelije po nastavniku, zaglavlje razreda/razrednik, sadržaj ćelije po
+   razredu). `export_report` (.docx) namjerno NIJE dirana — Word ne
+   izvršava vodeće `=`/`+`/`-`/`@` kao formulu, pa rizik ne postoji tamo.
+   Testirano lokalno: zlonamjerni unosi (`=SUM(...)`, `+HACK`, `-x`,
+   `@SUM(1)`) u imenima nastavnika, predmeta, dana i vremena časova —
+   svi dobijaju apostrof u izlaznom `.xlsx`-u (potvrđeno čitanjem fajla
+   nazad kroz openpyxl, 0 nezaštićenih ćelija u adversarial test config-u);
+   benigni unosi (obična imena, dani, vremena) ostaju nepromijenjeni;
+   puna regresija sa stvarnim 9-razrednim config-om (315 časova) — i
+   `export_excel` i `export_report` i dalje rade bez greške. `git diff
+   --stat` potvrđuje da su promijenjeni SAMO redovi u `exports.py`;
+   `solver.py`/`validators.py` netaknuti.
 4. Sve ostalo provjereno ČISTO na živoj produkciji ili lokalno (identičan
    kod, gdje je autentifikacija spriječila test na produkciji bez
    rukovanja stvarnom lozinkom): HTTPS enforced (Railway 301, Vercel 308),
@@ -208,8 +224,9 @@ bez rukovanja stvarnom lozinkom (ne rukujem lozinkama — vidi napomenu niže).
    odlučio da ostane tako (2026-08-10); ovaj audit samo ponavlja
    podsjetnik, ne mijenja odluku.
 
-**Status:** Popravke #1 i #2 implementirane, testirane lokalno, spremne
-za push. Popravka #3 (exports.py) čeka eksplicitno odobrenje Direktora.
+**Status:** Sve tri popravke (#1 rate-limit, #2 /docs isključivanje, #3
+exports.py formula injection) implementirane i testirane lokalno,
+spremne za push.
 
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 

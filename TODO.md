@@ -41,10 +41,8 @@
 - [x] Curenje informacija: malformisan/ekstreman JSON ne curi stack
       trace; `/docs`+`/openapi.json`+`/redoc` NAĐENI javno dostupni bez
       lozinke — popravljeno, isključeni (2026-08-13)
-- [ ] **Excel formula injection (exports.py) — ČEKA ODOBRENJE.** Stvaran
-      mehanizam potvrđen (openpyxl tretira `=...` kao formulu). Predložen
-      apostrof-prefiks escape. NIJE mijenjano bez izričitog "da" — pravilo
-      sprinta za taj fajl.
+- [x] Excel formula injection (exports.py) — Direktor odobrio, apostrof-
+      prefiks escape implementiran i testiran (2026-08-13)
 - [x] Zavisnosti provjerene: npm audit (2 postojeća, dev-server only,
       nepovezano sa ovim sprintom), pip-audit (0 nalaza) (2026-08-13)
 - [x] Podsjetnik dat Direktoru o javnosti repoa (odluka ostaje njegova,
