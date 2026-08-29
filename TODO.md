@@ -5,6 +5,20 @@
 > prati ono što je dogovoreno a još nije urađeno, da se ništa ne izgubi.
 > Kad se stavka završi i potvrdi, označi je [x] i dodaj datum.
 
+## Sprint 11 — "Koliko truda" best-of-N (2026-08-13)
+
+- [x] `solve_timetable_best_of` dodan (solver.py), aditivno, Standardno
+      bit-identično prije/poslije — regresija provjerena i prošla (2026-08-13)
+- [x] Izbor Standardno/Pojačano/Maksimalno u App.jsx, sa izmjerenim (ne
+      pretpostavljenim) vremenima (2026-08-13)
+- [x] Duplirana zadana objective_weights svedena na jedan izvor istine
+      (Wizard.jsx izvozi, App.jsx uvozi) (2026-08-13)
+- [x] Mrtav `compactness` parametar jasno označen komentarom (nije uklonjen,
+      van opsega) (2026-08-13)
+- [x] **Nalaz i popravka: Railway idle-timeout rizik** — Maksimalno smanjeno
+      sa 6 na 4 pokušaja (Direktorova odluka), i frontend i backend klamp
+      ažurirani — vidi DECISION_LOG.md DL-008 (2026-08-13)
+
 ## Sprint 05 — Vizuelna nadogradnja (završeno 2026-08-12)
 
 - [x] Neumorfni "verdict" prozor (prihvaćeno/odbijeno) — vidi sprints/SPRINT_05.md (2026-08-12)

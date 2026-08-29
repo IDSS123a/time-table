@@ -13,7 +13,7 @@ Zavisnost:  pip install ortools
 from ortools.sat.python import cp_model
 import collections
 
-def solve_timetable(config, time_limit_s=60, workers=8):
+def solve_timetable(config, time_limit_s=60, workers=8, seed=None):
     D  = config["days"]                      # npr. ["Mo","Di","Mi","Do","Fr"]
     P  = config["periods"]                   # npr. [1..7]
     MORNING = set(config["morning_periods"]) # 1..4  (glavni predmeti)
@@ -26,6 +26,10 @@ def solve_timetable(config, time_limit_s=60, workers=8):
     BLOCK = config["block_subjects"]                       # {"Sport":[...], "Kunst":[1,2,3,4]}
     HR    = {int(k):v for k,v in config["homeroom"].items()}
     HR_DAILY = set(config["homeroom_daily_grades"])
+    # SPRINT 11 napomena: "compactness" je ovdje istorijski prisutan ali se NE
+    # koristi nigdje u m.Minimize(...) ispod (samo gap/balance/light_late) —
+    # mrtav parametar, namjerno NEDIRAN (izvan opsega ovog sprinta da se mijenja
+    # sama ciljna funkcija), samo jasno označen da ne zbunjuje u budućnosti.
     W = config.get("objective_weights", {"compactness":1,"balance":2,"light_late":1,"gap":3})
     LIGHT = set(config.get("light_subjects", ["Kunst","Ethik","Musik"]))
     # Per-teacher availability constraints, e.g. {"Victoria Bartz": {"max_period": 6}}
@@ -211,6 +215,15 @@ def solve_timetable(config, time_limit_s=60, workers=8):
     solver=cp_model.CpSolver()
     solver.parameters.max_time_in_seconds=time_limit_s
     solver.parameters.num_search_workers=workers
+    # SPRINT 11: seed=None (zadano, SVI dosadašnji pozivaoci) -> ova linija se
+    # NE izvršava, solver.parameters ostaje potpuno nedirano isto kao prije
+    # ovog sprinta (bit-identično ponašanje). Seed se postavlja SAMO kad ga
+    # best-of-N omotnica (solve_timetable_best_of, ispod) eksplicitno zatraži
+    # za pokušaje 2+ — CP-SAT je djelimično stohastičan kod portfolio pretrage
+    # sa vremenskim ograničenjem, različit seed daje različit (ne nužno bolji
+    # pojedinačno, ali bira se najbolji od N) raspored.
+    if seed is not None:
+        solver.parameters.random_seed = seed
     status=solver.Solve(m)
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return {"ok":False,"status":solver.StatusName(status),"lessons":[]}
@@ -237,8 +250,70 @@ def solve_timetable(config, time_limit_s=60, workers=8):
                     out.append(dict(teacher=L["teacher"],subj=L["subj"],grade=L["cls"],day=d,period=p,kind="block"))
                     out.append(dict(teacher=L["teacher"],subj=L["subj"],grade=L["cls"],day=d,period=p+1,kind="block"))
 
-    out = _polish_gaps(out, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY)
+    # SPRINT 11: isti razlog kao gore — seed=None znači POTPUNO isti poziv
+    # (bez seed= kwarg-a) kao prije ovog sprinta, _polish_gaps koristi svoj
+    # nepromijenjeni podrazumijevani seed=7.
+    if seed is not None:
+        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY, seed=seed)
+    else:
+        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY)
     return {"ok":True,"status":solver.StatusName(status),"objective":solver.ObjectiveValue(),"lessons":out}
+
+
+def _dashboard_gap_score(lessons):
+    """SPRINT 11 — ISTA metrika koju dashboard već prikazuje (DashboardTable,
+    frontend/src/App.jsx): najveća dnevna 'rupa' po nastavniku (span-broj
+    časova, max preko dana tog nastavnika), zbir preko svih nastavnika.
+    REZERVISANO nije stvarna osoba — izostavljen, isto kao u dashboardu.
+    Namjerno KOPIRA frontend logiku (ne izmišlja novu metriku) da bi best-of-N
+    biranje ispod bilo mjereno istim standardom koji Direktor već gleda."""
+    by_teacher = collections.defaultdict(list)
+    for L in lessons:
+        name = str(L["teacher"])
+        if name.startswith("REZERVISANO"):
+            continue
+        by_teacher[name].append(L)
+    total = 0
+    for _, ls in by_teacher.items():
+        by_day = collections.defaultdict(list)
+        for L in ls:
+            by_day[L["day"]].append(L["period"])
+        max_gap = 0
+        for periods in by_day.values():
+            span = max(periods) - min(periods) + 1
+            gap = span - len(periods)
+            if gap > max_gap:
+                max_gap = gap
+        total += max_gap
+    return total
+
+
+def solve_timetable_best_of(config, attempts=1, time_limit_s=60, workers=8):
+    """SPRINT 11 — ADITIVNA, OPCIONA omotnica oko POSTOJEĆEG solve_timetable.
+    attempts<=1 (ZADANO, "Standardno" način): jedan poziv solve_timetable BEZ
+    seed-a — bit-identičan poziv/rezultat kao prije ovog sprinta, ništa se ne
+    mijenja za nikoga ko ovu opciju ne dira.
+    attempts>1 ("Pojačano"=3, "Maksimalno"=4 — vidi main.py klamp i napomenu
+    o Railway idle-timeout ograničenju): zove solve_timetable N puta sa
+    RAZLIČITIM seedovima (CP-SAT random_seed + _polish_gaps seed variraju
+    zajedno), zadržava rezultat sa NAJMANJIM zbirom najvećih dnevnih rupa po
+    nastavniku (_dashboard_gap_score — ista metrika kao dashboard, ne nova).
+    Neuspjeli pokušaji (ok=False) se preskaču pri biranju najboljeg; ako SVI
+    pokušaji propadnu, vraća se rezultat POSLJEDNJEG (isti duh kao
+    solve_timetable, koje uvijek nešto vraća čak i kad ok=False)."""
+    if attempts <= 1:
+        return solve_timetable(config, time_limit_s, workers)
+    best_res, best_score, last_res = None, None, None
+    for i in range(attempts):
+        seed = 1000 * (i + 1) + 7  # razlicit po pokusaju, deterministicki (ne random.random() — reprodukovatljivo za debug)
+        res = solve_timetable(config, time_limit_s, workers, seed=seed)
+        last_res = res
+        if not res.get("ok"):
+            continue
+        score = _dashboard_gap_score(res["lessons"])
+        if best_res is None or score < best_score:
+            best_res, best_score = res, score
+    return best_res if best_res is not None else last_res
 
 
 def _polish_gaps(lessons, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY, iters=40000, seed=7):

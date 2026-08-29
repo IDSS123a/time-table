@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import "./styles.css"; // Paleta boja škole (CONSTITUTION.md P-4) + layout mreža + wizard ekrani.
-import Wizard from "./Wizard.jsx";
+import Wizard, { DEFAULT_OBJECTIVE_WEIGHTS } from "./Wizard.jsx";
 
 // URL backenda (FastAPI). Postavi u .env kao VITE_API_URL.
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -18,6 +18,23 @@ const SESSION_KEY = "idss_pwd";
 function authHeader(password) {
   return password ? { Authorization: "Basic " + btoa(":" + password) } : {};
 }
+
+// SPRINT 11: "koliko truda" izbor — ADITIVNO, "standard" (zadano) šalje
+// attempts=1 backendu, što je BIT-IDENTIČAN poziv kao prije ovog sprinta
+// (solve_timetable_best_of sa attempts<=1 samo prosljeđuje na nepromijenjeni
+// solve_timetable). Vremena su STVARNO izmjerena na punom 9-razrednom
+// config-u, ne pretpostavljena.
+// "Maksimalno" je NAMJERNO 4 (ne 6, kako je prvobitno planirano) — Railway
+// zatvara vezu bez prenosa podataka nakon 5 minuta (public networking
+// specs), a /solve ne šalje ništa nazad dok cijeli izračun ne završi.
+// Izmjereno: 6 pokušaja = 4.67 min (opasno blizu granice), 4 pokušaja =
+// 3.11 min (sigurna margina od skoro 2 min). Odluka Direktora 2026-08-13,
+// vidi DECISION_LOG.md DL-008.
+const EFFORT_LEVELS = {
+  standard: { attempts: 1, label: "Standardno", time: "~45–60s" },
+  boosted: { attempts: 3, label: "Pojačano", time: "~2.5–3 min" },
+  max: { attempts: 4, label: "Maksimalno", time: "~3–4 min" },
+};
 
 // ── SPRINT 07: jedna ćelija mreže, i dalje "draggable" I "droppable"
 // istovremeno (isti fizički termin je i moguć izvor i moguć cilj
@@ -411,7 +428,7 @@ export default function App() {
       homeroom: {},
       homeroom_daily_grades: [],
       light_subjects: [],
-      objective_weights: { compactness: 1, balance: 2, light_late: 1, gap: 3 },
+      objective_weights: DEFAULT_OBJECTIVE_WEIGHTS,
       teachers_fixed: [],
       teacher_constraints: {},
       lessons: [],
@@ -419,6 +436,9 @@ export default function App() {
   });
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
+  // SPRINT 11: "koliko truda" — zadano "standard" = identično ponašanje kao
+  // prije ovog sprinta (vidi EFFORT_LEVELS iznad).
+  const [effort, setEffort] = useState("standard");
   const [view, setView] = useState("class"); // "class" | "teacher"
   const [exportError, setExportError] = useState(""); // samo izvoz Excel/izvještaj — ostalo ide kroz verdict
   const [showDashboard, setShowDashboard] = useState(false);
@@ -491,7 +511,7 @@ export default function App() {
       const res = await apiFetch("/solve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config, time_limit_s: 45 }),
+        body: JSON.stringify({ config, time_limit_s: 45, attempts: EFFORT_LEVELS[effort].attempts }),
       });
       const data = await res.json();
       setLessons(data.lessons || []);
@@ -656,6 +676,17 @@ export default function App() {
           >
             Generiši raspored
           </button>
+          {/* SPRINT 11: "koliko truda" — Standardno (zadano) = identično
+              ponašanju prije ovog sprinta. Poštene, IZMJERENE (ne pretpostavljene)
+              vremenske procjene, ne apstraktan klizač. */}
+          <label className="effort-select" title="Koliko puta pokušati i zadržati najbolji raspored (manje pauza nastavnika) — više pokušaja = duže čekanje.">
+            Koliko truda:
+            <select value={effort} onChange={(e) => setEffort(e.target.value)} disabled={anyLoading}>
+              {Object.entries(EFFORT_LEVELS).map(([key, lvl]) => (
+                <option key={key} value={key}>{lvl.label} ({lvl.time})</option>
+              ))}
+            </select>
+          </label>
           <button
             className="secondary"
             onClick={() => setView(view === "class" ? "teacher" : "class")}
@@ -678,6 +709,16 @@ export default function App() {
         </div>
 
         {exportError && <div className="err">{exportError}</div>}
+
+        {/* SPRINT 11: Standardno (~45-60s) je dovoljno kratko da loader sam
+            po sebi ne zbunjuje. Pojačano/Maksimalno traju do 5-6 minuta —
+            bez objašnjenja bi mirni spinner mogao djelovati zaglavljeno. */}
+        {loading && effort !== "standard" && (
+          <p className="hint" style={{ marginTop: -6 }}>
+            ⏳ {EFFORT_LEVELS[effort].label} način — traje {EFFORT_LEVELS[effort].time},
+            isprobava {EFFORT_LEVELS[effort].attempts} varijante i zadržava najbolju. Sačekaj...
+          </p>
+        )}
 
         {/* Ručna korekcija — kratka uputa za prevlačenje časova. SPRINT 07:
             @dnd-kit radi na mišu I na dodiru (potvrđeno uživo pravim touch

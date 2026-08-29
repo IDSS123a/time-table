@@ -362,6 +362,75 @@ zatvaranja sprinta" NIJE i ne može biti ispunjen od strane Claude Code-a
 — ovo je estetski sud koji zahtijeva Direktorov pregled prije nego se
 sprint smatra zatvorenim.
 
+## DL-008 — Sprint 11: "koliko truda" (best-of-N), i Maksimalno=4 umjesto 6
+
+**Datum:** 2026-08-13
+**Kontekst:** Zasnovano na Sprint 10 analizi žive aplikacije (315 časova, 0
+grešaka, ~45-60s, 1/19 nastavnika "vruć" gap=3). Cilj: dati Direktoru pošten,
+DOKAZAN način da kaže "potrudi se više" — bez lažnog utiska kontrole (ranije
+utvrđeno da sama promjena objective_weights ne daje pouzdanu razliku).
+
+**Implementacija (solver.py, main.py, App.jsx/Wizard.jsx):**
+- `solve_timetable(config, time_limit_s, workers, seed=None)` — NOVI opcioni
+  `seed` parametar. Kad je `None` (svi dosadašnji pozivi), kod se izvršava
+  IDENTIČNO kao prije ovog sprinta — `solver.parameters.random_seed` se ne
+  postavlja, `_polish_gaps` se zove BEZ seed kwarg-a (svoj stari default=7).
+  Kad je `seed` dat, postavlja i CP-SAT random_seed i _polish_gaps seed —
+  CP-SAT je djelimično stohastičan (multi-worker portfolio pretraga sa
+  vremenskim ograničenjem), različit seed daje različit raspored.
+- `solve_timetable_best_of(config, attempts, time_limit_s, workers)` — NOVA
+  funkcija. attempts<=1 je čist passthrough na solve_timetable (bit-identično
+  main.py pozivu prije ovog sprinta). attempts>1 zove solve_timetable N puta
+  sa različitim seedovima, bira rezultat sa najmanjim `_dashboard_gap_score`
+  (NOVA pomoćna funkcija, ali namjerno KOPIRA postojeću DashboardTable
+  metriku iz App.jsx — najveća dnevna rupa po nastavniku, zbir preko svih,
+  REZERVISANO izostavljen — ne izmišlja se nova metrika).
+- main.py: `/solve` prima `attempts` (zadano 1), klampovano na [1,4] bez
+  obzira šta klijent pošalje (vidi rizik ispod za zašto 4, ne 6).
+- Frontend: izbor "Standardno"/"Pojačano"/"Maksimalno" pored dugmeta Generiši
+  (obično `<select>`, NE apstraktan klizač — pojedinačni gap/balance/
+  light_late klizači su namjerno VAN opsega, ranije dokazano nepouzdano).
+  Loader dobija kratak tekst objašnjenja za trajanja duža od Standardnog
+  (bez toga bi 3-4 min mirni spinner mogao djelovati zaglavljeno).
+- Duplirana zadana `objective_weights` (identična definicija nezavisno u
+  Wizard.jsx I App.jsx) svedena na jedan izvor istine — `Wizard.jsx` izvozi
+  `DEFAULT_OBJECTIVE_WEIGHTS`, `App.jsx` ga uvozi. Vrijednosti nepromijenjene.
+- `compactness` (mrtav parametar u solver.py — nikad korišten u
+  m.Minimize()) NIJE uklonjen (van opsega da se dira sama ciljna funkcija),
+  samo jasno označen komentarom da ne zbunjuje u budućnosti.
+
+**Regresijski test "Standardno" (Direktorov eksplicitan zahtjev prije bilo
+kakvog nastavka):** `git diff` na solver.py pregledan liniju-po-liniju —
+svaka nova linija je unutar `if seed is not None:` grane koja se za
+Standardno nikad ne izvršava. Pokrenuto uživo: 315 časova, 0 grešaka, 47.1s
+— identično prošlom izvještaju. BEZ regresije.
+
+**Dokaz da Pojačano/Maksimalno stvarno rade više pokušaja (ne samo tvrdnja):**
+instrumentisan poziv `solve_timetable_best_of(attempts=3)` pokazao 3 različita
+pojedinačna rezultata (gap_score 23, 21, 21) i potvrdio da vraćeni rezultat =
+min od sva tri (21). Puni end-to-end testovi: Pojačano (3 pokušaja) = 139.3s,
+Maksimalno (originalno 6 pokušaja) = 280.2s.
+
+**⚠️ Nalaz — Railway idle-timeout rizik za Maksimalno=6:** Railway-jeva
+[dokumentacija](https://docs.railway.com/networking/public-networking/specs-and-limits)
+zatvara vezu "nakon 5 minuta BEZ PRENOSA PODATAKA" (aktivan prenos smije do
+15 min). `/solve` endpoint ne šalje NIŠTA nazad dok cijeli izračun ne završi
+— tačan scenario za to pravilo. Izmjereno 6 pokušaja = 4.67 min, samo ~20s
+ispod granice od 300s — na produkcijskom (vjerovatno sporijem) hardveru
+realan rizik da Railway prekine vezu usred izračuna. Vercel NIJE rizik
+(frontend zove Railway direktno iz browsera, ne kroz Vercel funkciju/proxy —
+Vercel-ova ograničenja se ne primjenjuju).
+
+**Direktorova odluka (2026-08-13, upitan eksplicitno):** smanjiti Maksimalno
+sa 6 na **4 pokušaja**. Izmjereno: 4 pokušaja = 186.8s (3.11 min) — sigurna
+margina od skoro 2 minute ispod Railway granice. Klamp u main.py promijenjen
+sa [1,6] na [1,4] (ne samo frontend labela — i direktan API poziv je
+ograničen). Sve reference na "Maksimalno=6" u kodu/komentarima ažurirane.
+
+**Status:** implementirano, testirano (Standardno regresija, Pojačano i
+Maksimalno=4 pun end-to-end, dashboard i loader potvrđeni uživo), spremno za
+push.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

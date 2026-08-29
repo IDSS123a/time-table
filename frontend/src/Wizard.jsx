@@ -1,5 +1,11 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 
+// SPRINT 11: jedini izvor istine za zadane objective_weights — App.jsx uvozi
+// ovo za svoj početni config skelet umjesto da drži IDENTIČNU vrijednost
+// nezavisno (prije ovog sprinta je postojala ista definicija na dva mjesta).
+// Vrijednosti nepromijenjene, ovo je čisto uklanjanje duplikata.
+export const DEFAULT_OBJECTIVE_WEIGHTS = { compactness: 1, balance: 2, light_late: 1, gap: 3 };
+
 /**
  * SPRINT 02 — Wizard za unos i uređivanje config-a.
  *
@@ -143,7 +149,7 @@ function buildConfig(w) {
     homeroom,
     homeroom_daily_grades: w.homeroom_daily_grades.map(Number),
     light_subjects,
-    objective_weights: { compactness: 1, balance: 2, light_late: 1, gap: 3 },
+    objective_weights: DEFAULT_OBJECTIVE_WEIGHTS,
     teachers_fixed,
     teacher_constraints,
     lessons,

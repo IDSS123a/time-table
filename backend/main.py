@@ -13,7 +13,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
-from solver import solve_timetable
+from solver import solve_timetable_best_of
 from validators import validate, validate_config
 from exports import export_excel, export_report
 
@@ -89,6 +89,9 @@ def require_auth(request: Request, credentials: HTTPBasicCredentials = Depends(_
 class SolveBody(BaseModel):
     config: Dict[str, Any]
     time_limit_s: Optional[int] = 60
+    # SPRINT 11: "koliko truda" izbor sa frontenda (Standardno=1/Pojačano=3/
+    # Maksimalno=4). Zadano 1 = identično ponašanje kao prije ovog sprinta.
+    attempts: Optional[int] = 1
 
 class ExportBody(BaseModel):
     config: Dict[str, Any]
@@ -134,7 +137,15 @@ def solve(body: SolveBody):
     feas = _feasibility(body.config)
     if feas:
         return {"ok": False, "status": "INFEASIBLE_INPUT", "lessons": [], "errors": feas}
-    res = solve_timetable(body.config, body.time_limit_s or 60)
+    # SPRINT 11: klampuj na [1,4] bez obzira šta klijent pošalje — odbrambena
+    # mjera (isti duh kao ostala validacija u main.py), sprečava da neko
+    # slučajno/namjerno zatraži npr. attempts=1000 i blokira backend predugo.
+    # Gornja granica NAMJERNO 4, ne 6: Railway zatvara vezu bez prenosa
+    # podataka nakon 5 min (public networking specs), izmjereno 6 pokušaja =
+    # 4.67 min (opasno blizu), 4 pokušaja = 3.11 min (sigurna margina) —
+    # ovo NIJE samo frontend labela, mora vrijediti i za direktan API poziv.
+    attempts = max(1, min(4, body.attempts or 1))
+    res = solve_timetable_best_of(body.config, attempts=attempts, time_limit_s=body.time_limit_s or 60)
     if not res["ok"]:
         if res["status"] == "INFEASIBLE":
             msg = ("Rješavač je dokazao da traženi raspored NIJE moguć uz data ograničenja "

@@ -59,6 +59,17 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 }
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap}
 
+/* SPRINT 11 — "koliko truda" izbor pored Generiši dugmeta. Isti vizuelni
+   jezik kao ostala polja (border/radius/focus iz .wiz-field input), samo
+   izvan .wiz-panel konteksta pa treba sopstveni selector. */
+.effort-select{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:bold;color:var(--navy)}
+.effort-select select{
+  border:1px solid #cdd7e2;border-radius:8px;padding:7px 10px;font-size:13px;
+  font-family:inherit;background:#fff;color:var(--ink);font-weight:normal;cursor:pointer;
+}
+.effort-select select:focus{outline:2px solid var(--sky);border-color:var(--sky)}
+.effort-select select:disabled{opacity:.6;cursor:not-allowed}
+
 /* ── Dugmad: navy = primarna akcija (zadržava puni ton, dobija mekan
    neumorfni podignut/pritisnut osjećaj); .secondary = pravi .neu-raised. ── */
 button{
