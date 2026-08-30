@@ -533,6 +533,26 @@ vrijeme, prvi sljedeći poziv može dobiti grešku dok se projekat ne "probudi"
 (obično par sekundi do minute). Nije blokirajuće, ali vrijedi znati ako se
 pojavi privremena greška nakon duže pauze u korištenju.
 
+**⚠️ INCIDENT — produkcija je pukla nakon prvog push-a, popravljeno odmah
+(isti dan, 2026-08-30):** `backend/Dockerfile` eksplicitno navodi koji `.py`
+fajlovi se kopiraju u sliku (`COPY solver.py validators.py exports.py
+main.py ./`) — pri dodavanju NOVOG fajla `backend/storage.py` u ovom
+sprintu, Dockerfile NIJE ažuriran da ga uključi. Rezultat: Railway kontejner
+je pukao (`CRASHED` status, Direktor je primijetio na Railway dashboardu)
+sa `ModuleNotFoundError` na `main.py`-jevom `from storage import ...`, jer
+`storage.py` fizički nije bio u Docker slici. Sve lokalno testiranje prije
+push-a je prošlo jer se odvijalo DIREKTNO na fajl-sistemu (svi `.py` fajlovi
+prisutni), ne kroz Docker build — ovaj konkretan rizik (fajl postoji lokalno
+ali nije u Dockerfile COPY listi) lokalni test nije mogao uhvatiti.
+**Popravka:** `storage.py` dodan u COPY liniju. **Provjereno** (Docker nije
+lokalno instaliran): ručno kopiran TAČAN skup fajlova koji Dockerfile sada
+navodi u izolovan direktorijum, `main.py` se uvozi bez greške — simulira
+Docker-ovu izolaciju fajlova. Nakon push-a popravke, potvrđeno uživo na
+Railway-u: `/health` → 200, `/schedule/list` → 401 (ruta postoji, auth radi,
+kontejner stabilan). **Nauk za buduće sprintove:** svaki NOVI backend `.py`
+fajl mora se eksplicitno dodati u `Dockerfile` COPY liniju — ovo sad treba
+biti dio standardne provjere kad god se dodaje novi backend modul.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

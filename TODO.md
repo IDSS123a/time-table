@@ -18,6 +18,11 @@
       čist 503, sve ostalo radi normalno (2026-08-30)
 - [x] Supabase service_role ključ NIJE u frontend kodu/bundle-u — provjereno
       (2026-08-30)
+- [x] **INCIDENT popravljen isti dan:** prvi push je oborio produkciju
+      (Dockerfile nije kopirao novi storage.py, main.py pucao na importu) —
+      Direktor primijetio CRASHED na Railway dashboardu, popravljeno i
+      potvrđeno uživo u roku od par minuta. Vidi DECISION_LOG.md DL-009
+      ("nauk za buduće" napomena) (2026-08-30)
 - [ ] **Direktor treba:** kreirati Supabase nalog+tabelu (SQL u
       sprints/SPRINT_12.md), postaviti `SUPABASE_URL` i
       `SUPABASE_SERVICE_ROLE_KEY` na Railway, i potvrditi stvaran upis u

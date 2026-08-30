@@ -173,6 +173,17 @@ Open risks:
 - NIJE testirano protiv PRAVOG Supabase-a (samo mock) — vidi uputstvo
   ispod za Direktorovu potvrdu nakon deploya.
 
+INCIDENT (isti dan, popravljeno odmah): prvi push je oborio produkciju —
+backend/Dockerfile eksplicitno navodi koje .py fajlove kopira u sliku, a
+NIJE ažuriran kad je dodan novi backend/storage.py. Railway kontejner je
+pukao (CRASHED, Direktor primijetio na dashboardu) sa ModuleNotFoundError
+na main.py "from storage import ...". Lokalno testiranje ovo nije uhvatilo
+jer se odvijalo direktno na fajl-sistemu (svi .py fajlovi prisutni), ne
+kroz Docker build. Popravka: storage.py dodan u Dockerfile COPY liniju,
+push-ovano odmah, potvrđeno uživo (/health 200, /schedule/list 401 —
+kontejner stabilan). Vidi DECISION_LOG.md DL-009 za pun opis i "nauk za
+buduće": svaki NOVI backend .py fajl mora ići u Dockerfile COPY liniju.
+
 ═══════════════════════════════════════════════════════════════════
 UPUTSTVO ZA DIREKTORA — Supabase podešavanje (Claude Code ne može ovo
 uraditi sam, ne rukuje pravim kredencijalima)
