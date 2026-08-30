@@ -59,6 +59,31 @@ main{padding:20px 24px;max-width:1800px;margin:0 auto}
 }
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap}
 
+/* SPRINT 13 — traka komandi (Generiši/Koliko truda/Prikaz/Sačuvaj/Izvezi/
+   Dashboard) fiksirana ("sticky") na vrhu ekrana dok se skroluje kroz
+   mreže rasporeda ispod — Direktor je morao stalno skrolovati nazad na
+   vrh (preko cijelog wizarda) da ponovo klikne bilo koju akciju. CSS
+   position:sticky (ne JS trik). SAMO na desktop/tablet (≥481px) — na
+   najužim mobilnim ekranima OSTAJE nepromijenjeno (normalan tok, isto
+   ponašanje kao prije ovog sprinta): sticky traka bi se na malom ekranu,
+   kad se dugmad prelome u više redova (ima ih dosta — Generiši, izbor
+   truda, Prikaz, Učitaj sačuvano, oznaka+Sačuvaj, 2× Izvezi, Dashboard),
+   trajno "pojela" značajan dio već ograničenog vertikalnog prostora —
+   upravo problem koji je sprint tražio da se izbjegne na mobitelu.
+   Pozadina/sjenka koriste POSTOJEĆE tokene (--surface, --shadow-dark,
+   isti kao svugdje drugo u aplikaciji) — bez pozadine bi sadržaj koji se
+   skroluje ispod bio vidljiv KROZ traku dok je "zalijepljena" za vrh
+   ekrana (izgledalo bi polomljeno) — ovo NIJE nova boja/stil, VAN OPSEGA
+   ovog sprinta je bilo mijenjati dizajn, i nije mijenjan. */
+@media (min-width:481px){
+  .controls{
+    position:sticky;top:0;z-index:50;
+    background:var(--surface);
+    margin:0 0 20px;padding:10px 0;
+    box-shadow:0 4px 10px var(--shadow-dark);
+  }
+}
+
 /* SPRINT 11 — "koliko truda" izbor pored Generiši dugmeta. Isti vizuelni
    jezik kao ostala polja (border/radius/focus iz .wiz-field input), samo
    izvan .wiz-panel konteksta pa treba sopstveni selector. */
@@ -112,6 +137,18 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 .block h3{margin:0;background:var(--navy);color:#fff;padding:10px 14px;font-size:15px;font-family:var(--font-display)}
 
 table{border-collapse:collapse;width:100%;min-width:620px;font-variant-numeric:tabular-nums}
+/* SPRINT 13 — ujednačene širine kolona dana (Mo-Fr) u SVAKOJ mreži
+   rasporeda, dosljedno kroz cijelu aplikaciju (i "po razredu" i "po
+   nastavniku"). Prije ovoga: table-layout:auto (podrazumijevano) je
+   raspoređivao širine kolona PO SADRŽAJU ćelija — svaka mreža je zato
+   imala drugačije proporcije (Direktorovo zapažanje sa screenshot-om).
+   Sa fixed layout-om, SAMO prva vrsta (Grid komponenta, App.jsx: "Čas"
+   th = 120px, dani bez eksplicitne širine) određuje kolone — 5 dana
+   automatski dijele ostatak POJEDNAKO, isto u svakoj tabeli (jer sve
+   imaju isti kontejner/širinu). Scoped na .grid-table SAMO (ne bare
+   `table`) — Wizard-ove tabele (nastavnici/predmeti/lista) imaju sasvim
+   drugačije, sadržajem-vođene kolone i ne smiju se dirati. */
+table.grid-table{table-layout:fixed}
 th,td{border:1px solid #cdd7e2;padding:6px 8px;text-align:center;font-size:12px;height:44px;vertical-align:middle}
 th{background:var(--sky);color:#fff}
 td.time{background:#eef4fb;font-weight:bold;white-space:nowrap}

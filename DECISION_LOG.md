@@ -623,6 +623,60 @@ sa i bez polja, pun end-to-end sa žutim upozorenjem potvrđen uživo),
 solver.py/validators.py potvrđeno NISU dalje mijenjani u ovom dijelu
 (git diff pokazuje samo ono što je već bilo prisutno prije ovog rada).
 
+## DL-011 — Sprint 13: fiksirana traka komandi + ujednačene širine kolona
+
+**Povod:** Direktorovo zapažanje (sa screenshot-om) — (1) traka komandi
+(Generiši/Koliko truda/Prikaz/Izvezi/Dashboard) se odskroluje sa
+sadržajem, mora se stalno vraćati na vrh; (2) širine kolona dana
+(Mo-Fr) nisu ujednačene ni unutar jedne tabele ni između tabela.
+
+**Rješenje — čist CSS, nula promjena u logici rasporeda/generisanja:**
+1. `table.grid-table{table-layout:fixed}` (styles.css) + nova klasa
+   `grid-table` dodana samo na `<table>` u Grid komponenti (App.jsx).
+   Fixed layout znači da SAMO prva vrsta (thead: "Čas"=120px, 5 dana
+   bez eksplicitne širine) određuje kolone — 5 dana automatski dijele
+   preostali prostor POJEDNAKO, dosljedno u svakoj tabeli (isti
+   kontejner = ista širina). Scoped isključivo na `.grid-table`, NE na
+   bare `table` — Wizard-ove tabele (nastavnici/predmeti/lista, sasvim
+   drugačije, sadržajem-vođene kolone) nisu dirane.
+2. `.controls{position:sticky;top:0;z-index:50;background:var(--surface);
+   box-shadow:0 4px 10px var(--shadow-dark)}` unutar
+   `@media (min-width:481px)` — SAMO desktop/tablet. Na najužim mobilnim
+   ekranima (< 481px) ostaje POTPUNO nepromijenjeno (traka se skroluje
+   normalno kao i prije ovog sprinta) — namjerna odluka, ne previd:
+   dugmadi u traci ima dosta (Generiši, izbor truda, Prikaz, Učitaj
+   sačuvano, oznaka+Sačuvaj, 2× Izvezi, Dashboard), pa bi čak i
+   kompaktnija sticky verzija na malom ekranu trajno "pojela" značajan
+   dio već ograničenog vertikalnog prostora — upravo problem koji je
+   sprint tražio da se izbjegne. Boja pozadine/sjenke koristi ISKLJUČIVO
+   postojeće tokene (`--surface`, `--shadow-dark`) — nije nova boja,
+   samo sprječava da se sadržaj ispod "vidi kroz" zalijepljenu traku.
+
+**Testirano UŽIVO** (pravi backend, pravi 9-razredni IDSS config sa
+Sprint-14 poljima, real solve — 315 časova, 9 tabela u oba prikaza):
+- 375/390/428px: `.controls` je `position:static` (nepromijenjeno) —
+  potvrđeno DOM inspekcijom (`getComputedStyle`), traka se skroluje sa
+  sadržajem, ne guta ekran.
+- 768/1024/1280/1440/1920/2560px: `.controls` je `position:sticky`,
+  `top:0px` čak i pri skrolu do samog dna stranice — ne prekriva
+  sadržaj ispod (h3 naslov sekcije ispod trake ostaje vidljiv).
+- Sve kolone dana identične širine u svih 9 tabela, u OBA prikaza
+  ("po razredu" i "po nastavniku"), na svakoj testiranoj širini (npr.
+  1280px → 219px/dan u svih 9; 1920px i 2560px → identičnih 1752px
+  ukupne širine tabele u oba slučaja, potvrđuje da 1800px max-width cap
+  iz Sprint 06 i dalje važi).
+- `git diff --stat backend/` prazan — backend netaknut.
+- `git diff` na styles.css: NULA novih hex/color/`--var` vrijednosti
+  (grep provjeren) — jedine dvije nove CSS cjeline koriste isključivo
+  postojeće tokene, dizajn nepromijenjen.
+- `npm run build` prolazi bez grešaka.
+
+**Status:** implementirano i testirano uživo na svim traženim širinama
+(375/390/428 mobitel, 768/1024 tablet, 1280/1440/1920/2560 desktop).
+Otvoreno: mobilna verzija trake (potpuno statična, bez sticky) čeka
+Direktorovu ličnu ocjenu na svom uređaju — ako se pokaže da treba
+kompaktnija sticky verzija za mobitel, to je novi, odvojeni zahtjev.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

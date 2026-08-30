@@ -5,6 +5,25 @@
 > prati ono što je dogovoreno a još nije urađeno, da se ništa ne izgubi.
 > Kad se stavka završi i potvrdi, označi je [x] i dodaj datum.
 
+## Sprint 13 — Fiksirana traka + ujednačene kolone (2026-08-30)
+
+- [x] Ujednačene širine kolona dana (Mo-Fr) u SVIM tabelama, oba prikaza —
+      `table.grid-table{table-layout:fixed}` + klasa na Grid komponenti,
+      scoped samo na .grid-table (ne Wizard-ove tabele) (2026-08-30)
+- [x] Fiksirana ("sticky") traka komandi na desktop/tablet (≥481px), na
+      mobitelu (<481px) NEPROMIJENJENO (statična, kao prije sprinta) —
+      namjerna odluka, vidi DECISION_LOG.md DL-011 (2026-08-30)
+- [x] Testirano UŽIVO na svim traženim širinama (375/390/428 mobitel,
+      768/1024 tablet, 1280/1440/1920/2560 desktop) sa pravim solve-om
+      (315 časova, 9 tabela, oba prikaza) — DOM inspekcija potvrdila
+      sticky/static ponašanje i jednake širine kolona (2026-08-30)
+- [x] Backend netaknut (`git diff --stat backend/` prazan), boje/stil
+      nepromijenjeni (nula novih color/--var vrijednosti u CSS diff-u)
+      (2026-08-30)
+- [ ] **Direktor treba:** lično ocijeniti mobilnu verziju trake (statična,
+      bez sticky) na svom uređaju — javiti ako treba kompaktnija sticky
+      verzija za mobitel umjesto potpunog isključivanja
+
 ## Sprint 14 — Meko upozorenje 5.–9. razred, Mathematik/Deutsch (2026-08-30)
 
 - [x] Jezgro (solver.py `morning_core_hard_grades`, validators.py

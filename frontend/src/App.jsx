@@ -81,10 +81,17 @@ function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
   const days = config.days;
   const periods = config.periods;
   const times = config.period_times || {};
+  // SPRINT 13: "grid-table" klasa -> table-layout:fixed (styles.css) —
+  // bez ovoga browser sam raspoređuje širine kolona po sadržaju ćelija,
+  // pa svaka mreža (svaki razred/nastavnik) dobije DRUGAČIJE proporcije
+  // dana (Direktorovo zapažanje sa screenshot-om). Sa fixed layout-om,
+  // jedino prva vrsta (ovaj <thead>, "Čas" = 120px, dani bez eksplicitne
+  // širine) određuje kolone — 5 dana automatski dijele ostatak POJEDNAKO,
+  // dosljedno u SVAKOJ tabeli (ista širina kontejnera = ista širina kolona).
   return (
     <div className="block">
       <h3>{title}</h3>
-      <table>
+      <table className="grid-table">
         <thead>
           <tr>
             <th style={{ width: 120 }}>Čas</th>
