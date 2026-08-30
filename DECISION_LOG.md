@@ -677,6 +677,73 @@ Otvoreno: mobilna verzija trake (potpuno statična, bez sticky) čeka
 Direktorovu ličnu ocjenu na svom uređaju — ako se pokaže da treba
 kompaktnija sticky verzija za mobitel, to je novi, odvojeni zahtjev.
 
+## DL-012 — Sprint 15: boja po predmetu u mreži rasporeda
+
+**Svjesno odstupanje od zvanične palete — SAMO ovdje:** Direktor je
+eksplicitno odobrio da SAMO za ovu jednu svrhu (pozadinska boja ćelije
+u mreži rasporeda) izađemo iz zvanične 5-bojne palete (CONSTITUTION.md
+P-4). Dugmad/verdict prozor/zaglavlje/dashboard NEPROMIJENJENI — tamo
+zvanična paleta ostaje jedini izvor boja (potvrđeno: git diff na
+:root bloku styles.css je prazan).
+
+**Treći duplikat, nenaveden u sprint dokumentu:** Direktorov dostavljeni
+fajl je imao TRI duplikata boje, ne dva. Naturkunde/Lebenskunde su već
+stigli ispravljeni u sprint specifikaciji; Grundtechniken i Technik su
+OBA imala `#FFE699`. Pitao Direktora uživo prije implementacije (pravilo
+sesije: ne nagađati kad rezultat direktno krši sopstveni kriterij
+prihvatanja sprinta — "nijedna dva predmeta nemaju identičnu boju").
+Odluka Direktora (2026-08-30): Grundtechniken zadržava `#FFE699` (kao u
+originalnom fajlu), Technik dobija `#D2B48C` (ista porodica boja —
+tan/bež, blizu originalne namjere, ali razlučivo). Svih 23 boje sada
+međusobno jedinstvene, provjereno programski prije i poslije izmjene.
+
+**Nacharbeit unifikacija:** Prije ovog sprinta, Nacharbeit je imao
+poseban CSS slučaj (`td.nach{background:#eaf6ff}`) odvojen od ostalih
+predmeta. Uklonjeno — Nacharbeit sada ide kroz ISTI mehanizam kao svaki
+drugi predmet (`SUBJECT_COLORS["Nacharbeit"] = "#FBD4B4"`). Potvrđeno
+uživo: 35 Nacharbeit ćelija u testnom rasporedu, 0 i dalje koristi staru
+klasu.
+
+**Čitljivost teksta — izračunata PRIJE pisanja koda, ne nagađana:**
+WCAG relativna luminansa/kontrast izračunat za svih 23 boje (crno vs
+bijelo tekst). 22 od 23 prolaze sa CRNIM tekstom, uključujući
+najsvjetliju boju u tabeli (Chemie `#CCFFFF`, kontrast 19.3:1).
+Geschichte (`#666699`) je JEDINI predmet kojem crn tekst pada ispod
+WCAG AA (3.93:1 < 4.5:1) — dobija bijeli tekst umjesto toga (nova
+`.light-text` CSS klasa). Uz to, postojeći fiksni ton za nastavnikovo
+ime (`.who{color:#456}`, tuniran za bijelu pozadinu prije ovog sprinta)
+zamijenjen sa `color:inherit` — taj stari ton bi na više novih,
+zasićenih boja (npr. Deutsch `#FF3737`) pao na svega 2.1:1 kontrasta,
+daleko ispod čitljivog praga; provjereno računski za svih 23 boje prije
+izmjene.
+
+**"Rezervisano" i "vučem preko" — naglasak PREKO boje predmeta, ne
+zamjena** (eksplicitan zahtjev sprinta): "Rezervisano" (honorarni
+placeholder) je prije bio puna zamjena pozadine (`background:#fff2f2`);
+sada je crvena inset ivica (3px, `var(--red)`, POSTOJEĆI token, nije
+nova boja) + crven podebljan tekst, boja predmeta ostaje vidljiva ispod.
+"Drag-target" (ćelija preko koje se prevlači čas) je prije bio puna
+zamjena (`background:#fff6d8`); sada poluproziran žuti sloj
+(`background-image: linear-gradient(rgba(255,203,41,.45), ...)`), boja
+predmeta i dalje vidljiva ispod žutog "premaza". Hover/grab stanje
+(transform+box-shadow) nije nikad diralo pozadinu, ostaje kompatibilno
+bez izmjene.
+
+**Testirano UŽIVO** (pravi backend, pravi 9-razredni IDSS config, real
+solve — 315 časova, 9 tabela u OBA prikaza "po razredu" i "po
+nastavniku"): svih 23 predmeta dosljedna boja u svih 9 tabela oba
+prikaza (getComputedStyle provjeren za svaku ćeliju, 0 nekonzistentnosti);
+Geschichte potvrđen bijeli tekst; Chemie/Deutsch potvrđen čitljiv crn
+tekst (i vizuelno, screenshot); 13 rezervisanih ćelija potvrđene sa
+crvenom ivicom PREKO vidljive boje predmeta; drag-target potvrđen
+programski (backgroundColor nepromijenjen dok je klasa prisutna);
+`npm run build` prolazi; `git diff --stat backend/` prazan.
+
+**Status:** implementirano i testirano uživo. Vidi sprints/SPRINT_15.md
+za pun HANDOFF, uklj. napomenu o povremenoj nepouzdanosti alata za
+snimanje ekrana u ovom razvojnom okruženju (nevezano za ovaj sprint —
+zamijenjeno programskom DOM/computed-style provjerom).
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

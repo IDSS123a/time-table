@@ -153,9 +153,26 @@ th,td{border:1px solid #cdd7e2;padding:6px 8px;text-align:center;font-size:12px;
 th{background:var(--sky);color:#fff}
 td.time{background:#eef4fb;font-weight:bold;white-space:nowrap}
 td .sub{font-weight:bold}
-td .who{color:#456;font-size:11px}
-td.nach{background:#eaf6ff}
-td.reserved{background:#fff2f2;color:var(--red)}
+/* SPRINT 15: boja predmeta (App.jsx, SUBJECT_COLORS) se postavlja kao
+   inline style DIREKTNO na <td> (backgroundColor + color) — "color" mora
+   da se NASLIJEDI u .sub/.who (ne fiksna vrijednost kao ranije #456), inače
+   bi teško čitljiv fiksni ton ostao preko novih, često zasićenih boja
+   predmeta (npr. #445566 na Deutsch #FF3737 pada na 2.1:1 kontrasta —
+   daleko ispod WCAG AA 4.5:1; provjereno računski za svih 23 boje prije
+   ove izmjene). color:inherit uzima ono što App.jsx odredi po predmetu
+   (crno za 22 od 23 boje, bijelo SAMO za Geschichte — vidi .light-text). */
+td .who{color:inherit;font-size:11px}
+/* Nacharbeit VIŠE nema poseban CSS slučaj (bila je td.nach{background:
+   #eaf6ff}) — sada ide kroz ISTI mehanizam kao svaki drugi predmet,
+   inline stil iz SUBJECT_COLORS["Nacharbeit"]. */
+td.light-text{color:#fff}
+/* "Rezervisano" (honorarni placeholder, REZERVISANO – Predmet): OSTAJE
+   posebno obilježen, ali kao NAGLASAK PREKO boje predmeta (crvena ivica +
+   crven podebljan tekst), NE kao zamjena pozadine — boja predmeta ostaje
+   vidljiva ispod. inset box-shadow ne guta prostor (za razliku od border)
+   i ne remeti table-layout:fixed širine kolona (Sprint 13). */
+td.reserved{box-shadow:inset 0 0 0 3px var(--red)}
+td.reserved .sub,td.reserved .who{color:var(--red);font-weight:bold}
 
 /* ── Prevlačiv čas: grab kursor + blag "lift" na hover (najavljuje da se
    može podići, prije nego korisnik i proba). SPRINT 07: @dnd-kit (miš I
@@ -168,7 +185,12 @@ td.draggable{cursor:grab;transition:transform .12s ease, box-shadow .12s ease;to
 td.draggable:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(3,94,161,.28);position:relative;z-index:1}
 td.draggable:active,td.dragging{cursor:grabbing}
 td.dragging{box-shadow:0 6px 16px rgba(3,94,161,.35)}
-td.drag-target{background:#fff6d8}
+/* SPRINT 15: bilo `background:#fff6d8` (puna, neprovidna zamjena) — sada
+   background-IMAGE (poluproviran žuti sloj, --yellow sa alpha), koji se
+   crta PREKO postojećeg background-color (boja predmeta) umjesto da ga
+   zamijeni. Ista vizuelna namjera (žuto = "ovdje možeš spustiti čas") kao
+   prije, ali boja predmeta ostaje vidljiva ispod, providno. */
+td.drag-target{background-image:linear-gradient(rgba(255,203,41,.45),rgba(255,203,41,.45))}
 
 /* ─────────────────────────────────────────────────────────────
    Wizard ekrani

@@ -36,17 +36,64 @@ const EFFORT_LEVELS = {
   max: { attempts: 4, label: "Maksimalno", time: "~3–4 min" },
 };
 
+// SPRINT 15 — SVJESNO ODSTUPANJE OD ZVANIČNE PALETE (CONSTITUTION.md P-4),
+// odobreno od Direktora SAMO za ovu jednu svrhu: boja po predmetu u ćeliji
+// mreže rasporeda (Grid komponenta niže). Zvanična paleta 5 boja ostaje
+// netaknuta svugdje drugo (dugmad, verdict prozor, zaglavlje, dashboard —
+// vidi styles.css :root). Tabela je Direktorova, iz vlastitog mockup-a,
+// preuzeta tačno — SA JEDNIM ispravkom preko dva već navedena: originalni
+// fajl je imao TRI duplikata, ne dva. Naturkunde/Lebenskunde su već stigli
+// ispravljeni (bili isti kao Biologie/Physik); Grundtechniken i Technik su
+// OBA imala #FFE699 u dostavljenoj tabeli (nenavedeno u sprint dokumentu) —
+// Direktor je odabrao (2026-08-30) da Grundtechniken zadrži #FFE699, a
+// Technik dobije novu, jedinstvenu nijansu (#D2B48C, ista porodica boja —
+// tan/bež — vizuelno blizu originalne namjere, ali razlučiva). Svih 23
+// boje sada su međusobno jedinstvene (provjereno programski).
+const SUBJECT_COLORS = {
+  "B/H/S": "#F47914",
+  "Biologie": "#01FF62",
+  "Chemie": "#CCFFFF",
+  "Deutsch": "#FF3737",
+  "Englisch": "#DF6FBF",
+  "Erdkunde": "#92D050",
+  "Ethik": "#548DD4",
+  "Französisch": "#00FFFF",
+  "Geschichte": "#666699",
+  "Gesellschaft": "#FBD90D",
+  "Grundtechniken": "#FFE699",
+  "Informatik": "#80EFFE",
+  "Kunst": "#95B3D7",
+  "Lebenskunde": "#C9A0DC",
+  "Mathematik": "#FFFF00",
+  "Musik": "#FBBDF8",
+  "Nacharbeit": "#FBD4B4",
+  "Naturkunde": "#7FE8A4",
+  "Physik": "#00CC99",
+  "Sachkunde": "#99FF33",
+  "Sport": "#00B0F0",
+  "Technik": "#D2B48C",
+  "Umweltkunde": "#33CC33",
+};
+// Jedini predmet čija je pozadina dovoljno TAMNA da crn tekst padne ispod
+// WCAG AA (4.5:1) za sitan tekst — provjereno računski (relativna
+// luminansa) za svih 23 boje; Geschichte je jedini koji treba bijeli tekst,
+// svi ostali (uklj. najsvjetlije, npr. Chemie #CCFFFF) prolaze sa crnim.
+const SUBJECT_LIGHT_TEXT = new Set(["Geschichte"]);
+
 // ── SPRINT 07: jedna ćelija mreže, i dalje "draggable" I "droppable"
 // istovremeno (isti fizički termin je i moguć izvor i moguć cilj
 // prevlačenja) — @dnd-kit/core zahtijeva da se dvije odvojene hook-ref
 // funkcije spoje u jedan ref callback, standardan obrazac biblioteke.
 // id oblik: "{grade}::{day}::{period}" — jedinstven kroz SVE razrede
 // (jedan zajednički DndContext obuhvata sve mreže odjednom).
-function DraggableCell({ id, canDrag, canDrop, className, title, children }) {
+function DraggableCell({ id, canDrag, canDrop, className, title, children, cellStyle }) {
   const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({ id, disabled: !canDrag });
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id, disabled: !canDrop });
   const setRefs = useCallback((node) => { setDragRef(node); setDropRef(node); }, [setDragRef, setDropRef]);
-  const style = {};
+  // SPRINT 15: boja po predmetu (cellStyle: backgroundColor/color) ide OVDJE,
+  // spojena sa transform/zIndex koje @dnd-kit sam upravlja preko istog style
+  // objekta — mora biti jedan te isti <td style=...>, ne dva odvojena.
+  const style = { ...cellStyle };
   if (transform) style.transform = `translate3d(${transform.x}px, ${transform.y}px, 0)`;
   if (isDragging) style.zIndex = 50;
   const classes = [className, isDragging ? "dragging" : "", isOver && canDrop ? "drag-target" : ""].filter(Boolean).join(" ");
@@ -109,12 +156,23 @@ function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
               </td>
               {days.map((d) => {
                 const L = cells[`${d}|${p}`];
-                const isNach = L && L.subj === "Nacharbeit";
                 const isRes = L && String(L.teacher).startsWith("REZERVISANO");
                 const isFixedOrBlock = L && (L.kind === "block" || L.kind === "fixed");
                 const canDrag = dndEnabled && !disableDrag && !!L && !isFixedOrBlock;
                 const canDrop = dndEnabled && !disableDrag && !!L;
-                const classes = [isRes ? "reserved" : isNach ? "nach" : "", canDrag ? "draggable" : ""]
+                // SPRINT 15: Nacharbeit se VIŠE ne boji kao poseban slučaj
+                // ("nach" CSS klasa uklonjena) — ide kroz ISTI mehanizam kao
+                // svaki drugi predmet, preko SUBJECT_COLORS["Nacharbeit"].
+                // "Rezervisano" (honorarni placeholder) OSTAJE poseban
+                // slučaj, ali sad kao NAGLASAK PREKO boje predmeta (crvena
+                // ivica + crven tekst), ne kao zamjena pozadine — boja
+                // predmeta ostaje vidljiva ispod (vidi td.reserved, styles.css).
+                const subjColor = L ? SUBJECT_COLORS[L.subj] : undefined;
+                const needsLightText = L && SUBJECT_LIGHT_TEXT.has(L.subj);
+                const cellStyle = subjColor
+                  ? { backgroundColor: subjColor, color: needsLightText ? "#fff" : "#000" }
+                  : undefined;
+                const classes = [isRes ? "reserved" : "", needsLightText ? "light-text" : "", canDrag ? "draggable" : ""]
                   .filter(Boolean).join(" ");
                 const cellTitle = canDrag
                   ? "Prevuci u drugi termin istog razreda"
@@ -132,7 +190,7 @@ function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
                 ) : "";
 
                 if (!dndEnabled) {
-                  return <td key={d} className={classes} title={cellTitle}>{content}</td>;
+                  return <td key={d} className={classes} style={cellStyle} title={cellTitle}>{content}</td>;
                 }
                 return (
                   <DraggableCell
@@ -141,6 +199,7 @@ function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
                     canDrag={canDrag}
                     canDrop={canDrop}
                     className={classes}
+                    cellStyle={cellStyle}
                     title={cellTitle}
                   >
                     {content}

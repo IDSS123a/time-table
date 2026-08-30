@@ -5,6 +5,30 @@
 > prati ono što je dogovoreno a još nije urađeno, da se ništa ne izgubi.
 > Kad se stavka završi i potvrdi, označi je [x] i dodaj datum.
 
+## Sprint 15 — Boja po predmetu u mreži rasporeda (2026-08-30)
+
+- [x] SUBJECT_COLORS mapa ugrađena (App.jsx), primijenjena u OBA prikaza
+      (Grid komponenta zajednička) — svih 23 predmeta dosljedna boja,
+      provjereno programski (getComputedStyle) u svih 9 tabela × 2
+      prikaza, 0 nekonzistentnosti (2026-08-30)
+- [x] Treći duplikat boje (Grundtechniken/Technik #FFE699, nenaveden u
+      sprintu) — riješeno uz Direktorovu potvrdu uživo, Technik dobio
+      #D2B48C. Vidi DECISION_LOG.md DL-012 (2026-08-30)
+- [x] Nacharbeit unifikovan u isti mehanizam, stari poseban CSS slučaj
+      (td.nach) uklonjen — potvrđeno 0 ćelija još koristi staru klasu
+      (2026-08-30)
+- [x] Čitljivost teksta izračunata (WCAG kontrast) za svih 23 boje PRIJE
+      koda — Geschichte jedini sa bijelim tekstom, ostatak crn; stari
+      .who ton (#456) zamijenjen sa color:inherit (2026-08-30)
+- [x] "Rezervisano" i "drag-target" prebačeni sa pune zamjene pozadine
+      na naglasak PREKO boje predmeta (crvena ivica / poluproziran žuti
+      sloj) — boja predmeta ostaje vidljiva ispod u oba slučaja
+      (2026-08-30)
+- [x] Zvanična paleta (dugmad/verdict/zaglavlje/dashboard) nepromijenjena
+      — git diff na :root bloku prazan; backend netaknut (2026-08-30)
+- [x] Testirano uživo: pravi solve (315 časova, 9 tabela), 2 čista
+      screenshot-a snimljena, sve provjere prošle (2026-08-30)
+
 ## Sprint 13 — Fiksirana traka + ujednačene kolone (2026-08-30)
 
 - [x] Ujednačene širine kolona dana (Mo-Fr) u SVIM tabelama, oba prikaza —
