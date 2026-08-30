@@ -259,12 +259,16 @@ function LoadingOverlay({ active }) {
 // rasporeda (drag-and-drop) i uspješan/neuspješan Generiši. Uspjeh nestaje
 // sam nakon ~4s; greška ostaje dok je korisnik sam ne zatvori (klik izvan
 // kartice ili na ✕) — greška se ne smije sama izgubiti.
-// verdict: null | { kind: "success"|"error", title, sub?, messages?: string[],
+// verdict: null | { kind: "success"|"error"|"warning", title, sub?, messages?: string[],
 //   actions?: [{label, onClick, className?}] }
 // SPRINT 12: `actions` je NOVO, ADITIVNO — svi dosadašnji pozivaoci ga nikad
 // ne prosljeđuju pa njihovo ponašanje ostaje identično. Koristi se SAMO za
 // potvrdu prepisivanja nesačuvanih izmjena pri "Učitaj sačuvano" (isti
 // neumorfni stil, ne novi izgled — samo dodatna dugmad umjesto samo X-a).
+// SPRINT 14: `kind: "warning"` je NOVO, ADITIVNO — žuta (--yellow), boja
+// "pažnja/istaknuto" po zvaničnoj paleti (CONSTITUTION.md P-4), NIKAD
+// crvena (rezervisano za stvarne greške). Ne auto-nestaje (isto kao greška
+// — Direktor treba stići pročitati napomenu), samo je vizuelno blaža.
 function VerdictModal({ verdict, onClose }) {
   useEffect(() => {
     if (verdict?.kind === "success") {
@@ -275,16 +279,18 @@ function VerdictModal({ verdict, onClose }) {
 
   if (!verdict) return null;
   const isSuccess = verdict.kind === "success";
+  const isWarning = verdict.kind === "warning";
+  const kindClass = isSuccess ? "verdict-success" : isWarning ? "verdict-warning" : "verdict-error";
   return (
     <div className="verdict-backdrop" onClick={onClose}>
       <div
-        className={`verdict-card neu-raised ${isSuccess ? "verdict-success" : "verdict-error"}`}
+        className={`verdict-card neu-raised ${kindClass}`}
         role="alertdialog"
         aria-live="assertive"
         onClick={(e) => e.stopPropagation()}
       >
         <button className="verdict-close" onClick={onClose} aria-label="Zatvori">✕</button>
-        <div className="verdict-icon">{isSuccess ? "✓" : "⊘"}</div>
+        <div className="verdict-icon">{isSuccess ? "✓" : isWarning ? "⚠" : "⊘"}</div>
         <h3>{verdict.title}</h3>
         {verdict.sub && <p className="verdict-sub">{verdict.sub}</p>}
         {verdict.messages && verdict.messages.length > 0 && (
@@ -557,7 +563,22 @@ export default function App() {
       setLessons(data.lessons || []);
       setUnsavedChanges(true); // SPRINT 12: svaki novi Generiši je "nesačuvan" dok se ne klikne Sačuvaj
       if (data.ok) {
-        setVerdict({ kind: "success", title: "Raspored je generisan", sub: "Svi časovi su uspješno raspoređeni." });
+        // SPRINT 14: "warnings" (Mathematik/Deutsch van jutra za razrede VAN
+        // morning_core_hard_grades) su ODVOJENE od "errors" — ne mijenjaju
+        // data.ok niti blokiraju prikaz, samo mijenjaju TON obavještenja
+        // (žuta napomena umjesto zelenog/plavog "sve savršeno"). Ako nema
+        // upozorenja, ponašanje je IDENTIČNO kao prije ovog sprinta.
+        const warns = data.warnings && data.warnings.length ? data.warnings : null;
+        if (warns) {
+          setVerdict({
+            kind: "warning",
+            title: "Raspored je generisan — uz napomenu",
+            sub: "Svi časovi su uspješno raspoređeni. Ispod su informativne napomene, ne greške:",
+            messages: warns,
+          });
+        } else {
+          setVerdict({ kind: "success", title: "Raspored je generisan", sub: "Svi časovi su uspješno raspoređeni." });
+        }
       } else {
         setVerdict({
           kind: "error",

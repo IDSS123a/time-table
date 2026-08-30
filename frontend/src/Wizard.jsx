@@ -42,6 +42,13 @@ function emptyWizard() {
     morning_periods: [1, 2, 3, 4],
     nach_periods: [6, 7],
     grades: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    // SPRINT 14: zadano SVI razredi — isto značenje kao backend fallback
+    // (solver.py/validators.py: config.get("morning_core_hard_grades",
+    // config.get("grades", []))) kad polje nedostaje. Bez ovog zadanog,
+    // prazan wizard bi emitovao [] (Mathematik/Deutsch NIGDJE tvrdo), što
+    // bi TIHO promijenilo ponašanje za svakog ko ovu novu kontrolu ne dirne
+    // — E-14 pravilo postoji upravo da se ovakva greška ne ponovi.
+    morning_core_hard_grades: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     target_per_grade: 35, // ciljni broj časova po razredu (IDSS: 35)
 
     // Ekran B — nastavnici, predmeti, lessons, fixed
@@ -144,6 +151,7 @@ function buildConfig(w) {
     nach_periods: w.nach_periods.map(Number),
     grades: w.grades.map(Number),
     morning_core_subjects,
+    morning_core_hard_grades: w.morning_core_hard_grades.map(Number),
     morning_core_by_grade,
     block_subjects,
     homeroom,
@@ -168,6 +176,11 @@ function loadConfig(cfg) {
   if (cfg.grades) w.grades = cfg.grades.map(Number);
   if (cfg.homeroom_daily_grades) w.homeroom_daily_grades = cfg.homeroom_daily_grades.map(Number);
   if (cfg.homeroom) w.homeroom = { ...cfg.homeroom };
+  // SPRINT 14: ISTA fallback formula kao backend (solver.py/validators.py)
+  // kad polje nedostaje u učitanom config-u — "svi razredi tog config-a",
+  // NE prazna lista. Round-trip mora sačuvati POSTOJEĆE ponašanje čak i za
+  // stariji config koji ovo polje nikad nije imao.
+  w.morning_core_hard_grades = (cfg.morning_core_hard_grades ?? cfg.grades ?? w.grades).map(Number);
 
   // target_per_grade izvedi iz days×periods ako nema eksplicitnog
   w.target_per_grade = (w.days.length || 5) * (w.periods.length || 7);
@@ -481,6 +494,21 @@ const Wizard = forwardRef(function Wizard({ config, onConfig, feasibility, feasi
           <Field label="Razredi">
             <input type="text" value={w.grades.join(", ")} onChange={(e) => up({ grades: e.target.value.split(",").map((s) => Number(s.trim())).filter((n) => !isNaN(n)) })} />
           </Field>
+
+          <div className="wiz-section-title">Mathematik/Deutsch OBAVEZNO ujutru (tvrdo pravilo) — za razred(e)</div>
+          <p className="hint">
+            Van označenih razreda, Mathematik/Deutsch se i dalje PREFERIRA ujutru, ali nije obavezno —
+            rješavač smije staviti van jutra ako treba (prikazuje se samo napomena, ne blokira raspored).
+            Stvaran razlog: honorarni nastavnici nisu uvijek dostupni ujutru za starije razrede.
+          </p>
+          <div className="wiz-chips">
+            {grades.map((g) => (
+              <button key={g} className={`chip ${w.morning_core_hard_grades.includes(g) ? "" : "off"}`} onClick={() => {
+                const has = w.morning_core_hard_grades.includes(g);
+                up({ morning_core_hard_grades: has ? w.morning_core_hard_grades.filter((x) => x !== g) : [...w.morning_core_hard_grades, g].sort((a, b) => a - b) });
+              }}>{g}. razred</button>
+            ))}
+          </div>
 
           <div className="wiz-summary">
             <b>Ciljni broj časova po razredu:</b> {days.length} dana × {periods.length} časa = <b className={totalSlots === w.target_per_grade ? "ok" : "bad"}>{totalSlots}</b>

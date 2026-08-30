@@ -19,10 +19,20 @@ def solve_timetable(config, time_limit_s=60, workers=8, seed=None):
     MORNING = set(config["morning_periods"]) # 1..4  (glavni predmeti)
     NACHP   = set(config["nach_periods"])    # 6,7
     GR = config["grades"]
-    CORE = set(config["morning_core_subjects"])          # {"Mathematik","Deutsch"} — globalno, svi razredi
+    CORE = set(config["morning_core_subjects"])          # {"Mathematik","Deutsch"} — globalno po imenu predmeta
+    # Direktorova odluka (2026-08-30): za razrede 1.-4. Mathematik/Deutsch OSTAJE
+    # tvrdo pravilo (mora ujutru). Za razrede 5.-9. postaje SAMO upozorenje, ne
+    # tvrdo ograničenje — stvaran razlog: honorarni nastavnici (npr. Haris
+    # Hamzić) nisu uvijek dostupni ujutru za starije razrede, pa je nametanje
+    # tvrdog pravila tamo nerealno. Ako polje nije podešeno u config-u
+    # (stariji configovi), zadano je "svi razredi" — isto ponašanje kao prije
+    # ove izmjene (bez iznenađenja za postojeće configove).
+    CORE_HARD_GRADES = set(config.get("morning_core_hard_grades", config.get("grades", [])))
     CORE_BY_GRADE = config.get("morning_core_by_grade", {})  # {"B/H/S":[1,2,3,4], "Englisch":[1,2,3,4]} — samo navedeni razredi
     def is_core(subj, grade):
-        return subj in CORE or grade in CORE_BY_GRADE.get(subj, [])
+        if subj in CORE:
+            return grade in CORE_HARD_GRADES
+        return grade in CORE_BY_GRADE.get(subj, [])
     BLOCK = config["block_subjects"]                       # {"Sport":[...], "Kunst":[1,2,3,4]}
     HR    = {int(k):v for k,v in config["homeroom"].items()}
     HR_DAILY = set(config["homeroom_daily_grades"])
@@ -254,9 +264,9 @@ def solve_timetable(config, time_limit_s=60, workers=8, seed=None):
     # (bez seed= kwarg-a) kao prije ovog sprinta, _polish_gaps koristi svoj
     # nepromijenjeni podrazumijevani seed=7.
     if seed is not None:
-        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY, seed=seed)
+        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_HARD_GRADES, CORE_BY_GRADE, TC, HR, HR_DAILY, seed=seed)
     else:
-        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY)
+        out = _polish_gaps(out, D, P, MORNING, CORE, CORE_HARD_GRADES, CORE_BY_GRADE, TC, HR, HR_DAILY)
     return {"ok":True,"status":solver.StatusName(status),"objective":solver.ObjectiveValue(),"lessons":out}
 
 
@@ -316,7 +326,7 @@ def solve_timetable_best_of(config, attempts=1, time_limit_s=60, workers=8):
     return best_res if best_res is not None else last_res
 
 
-def _polish_gaps(lessons, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY, iters=40000, seed=7):
+def _polish_gaps(lessons, D, P, MORNING, CORE, CORE_HARD_GRADES, CORE_BY_GRADE, TC, HR, HR_DAILY, iters=40000, seed=7):
     """FAZA 2 (post-CP-SAT): lokalna pretraga koja SAMO smanjuje rupe kod
     nastavnika, nikad ne krši nijedno tvrdo pravilo — UKLJUČUJUĆI "razrednik
     svaki dan" (HR/HR_DAILY), koje se lako zaboravi jer CP-SAT ga garantuje
@@ -340,7 +350,7 @@ def _polish_gaps(lessons, D, P, MORNING, CORE, CORE_BY_GRADE, TC, HR, HR_DAILY, 
         return t_occ, c_occ
 
     def dom_ok(L, p):
-        is_c = L["subj"] in CORE or L["grade"] in CORE_BY_GRADE.get(L["subj"], [])
+        is_c = (L["grade"] in CORE_HARD_GRADES) if L["subj"] in CORE else (L["grade"] in CORE_BY_GRADE.get(L["subj"], []))
         if is_c and p not in MORNING: return False
         if p not in allowed(L["teacher"]): return False
         return True

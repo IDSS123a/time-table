@@ -49,6 +49,12 @@
   "Mathematik",
   "Deutsch"
  ],
+ "morning_core_hard_grades": [
+  1,
+  2,
+  3,
+  4
+ ],
  "block_subjects": {
   "Sport": [
    1,

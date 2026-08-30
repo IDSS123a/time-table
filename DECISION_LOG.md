@@ -553,6 +553,76 @@ kontejner stabilan). **Nauk za buduće sprintove:** svaki NOVI backend `.py`
 fajl mora se eksplicitno dodati u `Dockerfile` COPY liniju — ovo sad treba
 biti dio standardne provjere kad god se dodaje novi backend modul.
 
+## DL-010 — Sprint 14: meko upozorenje za 5.–9. razred (Mathematik/Deutsch)
+
+**Datum:** 2026-08-30
+**Kontekst:** Otkriveno kroz Direktorovu nezavisnu provjeru stvarnih
+produkcijskih podataka (Sprint 12 test) — pravi honorarni raspored (Haris
+Hamzić) ima Mathematik popodne za razrede 5/8/9, što je ISPRAVNO stanje
+stvari (honorarni nastavnici nisu uvijek dostupni ujutru za starije
+razrede), ali `validate()` je to prijavljivao kao grešku. Direktorova
+odluka: 1.–4. razred ostaje TVRDO pravilo (mora ujutru); 5.–9. postaje
+SAMO upozorenje, ne blokira.
+
+**Jezgro (solver.py, validators.py) već izmijenjeno i testirano prije ovog
+dijela** (od strane Direktora/glavnog asistenta lično, isti standard kao za
+sve prethodne izmjene jezgra) — novo polje `morning_core_hard_grades`
+(lista razreda), zadano "svi razredi" ako nije podešeno (povratna
+kompatibilnost). Nova `validate_warnings()` funkcija u validators.py,
+namjerno ODVOJENA od `validate()` — upozorenja NIKAD ne blokiraju niti
+utiču na `/validate-move`.
+
+**Ovaj dio (Claude Code):**
+- `main.py`: `/solve` sada poziva i `validate_warnings()`, vraća novo
+  polje `warnings` odvojeno od `errors`. `ok` status i dalje zavisi
+  ISKLJUČIVO od `errors` — Direktorov zahtjev "upozorava ali ne
+  sprječava" ispoštovan doslovno.
+- Frontend: `VerdictModal` dobija NOVI, ADITIVNI `kind: "warning"` — žuta
+  (`--yellow`, zvanična paleta, "pažnja/istaknuto", NIKAD za greške po
+  CONSTITUTION.md P-4 — semantički savršeno pristaje), ⚠ ikonica, NE
+  auto-nestaje (kao greška — Direktor treba stići pročitati). Postojeći
+  "success"/"error" pozivi VerdictModal-a rade identično kao prije
+  (isWarning=false za njih, isti kod put).
+- `morning_core_hard_grades: [1,2,3,4]` postavljeno kao Direktorova
+  stvarna zadana vrijednost u OBA `idss_config.example.json` (backend I
+  frontend/src, identični, provjereno diff-om).
+- **KRITIČNO — E-14 pravilo (novo formalno pravilo COMMANDER-a, nastalo
+  upravo zbog ove dvije ranije greške — `teacher_constraints`, pa
+  `morning_core_by_grade`):** puna round-trip podrška za
+  `morning_core_hard_grades` u Wizard.jsx — `emptyWizard()` (zadano SVI
+  razredi, isto značenje kao backend fallback — bez ovoga bi prazan wizard
+  TIHO promijenio ponašanje za svakog ko ovu kontrolu ne dirne),
+  `buildConfig()` (uvijek eksplicitno emituje), `loadConfig()` (ISTA
+  fallback formula kao backend: `cfg.morning_core_hard_grades ?? cfg.grades`),
+  i PRAVA UI kontrola (chip-lista na Ekranu A, isti obrazac kao "Razrednik
+  svaki dan") — ne samo "preživi kroz Napredno JSON", puna funkcionalna
+  podrška urađena jer nije bilo suštinski skuplje.
+
+**Round-trip test (E-14 eksplicitno zahtijeva PRIJE zatvaranja sprinta):**
+- Config sa `morning_core_hard_grades: [1,2]` (NAMJERNO različit od "svi
+  razredi" da se dokaže da se polje stvarno čita, ne samo slučajno
+  poklapa sa fallback-om) → Ekran A chips ispravno pokazuju [1,2]
+  uključeno, [3] isključeno → Napredno JSON i dalje `[1,2]` bez ijedne
+  izmjene — round-trip potpuno čist.
+- Config BEZ polja (simulira stariji config) → Ekran A chips ispravno
+  pokazuju SVE razrede uključeno (fallback na "svi razredi TOG config-a")
+  → Napredno JSON eksplicitno emituje `[1,2,3]` (grades tog config-a) —
+  ISTO ponašanje kao prije, sada eksplicitno perzistentno, ne izgubljeno.
+- UI toggle (klik na chip) potvrđeno da odmah ažurira `config` uživo.
+
+**Pun end-to-end test sa stvarnim IDSS podacima** (9 razreda,
+`morning_core_hard_grades: [1,2,3,4]`, pravi Haris Hamzić raspored):
+solve uspio (315 časova, 9 razreda — regresija identična ranijim
+sprintovima), verdict prozor prikazao ŽUTO upozorenje ("Raspored je
+generisan — uz napomenu", 5 konkretnih napomena za Deutsch popodne u
+razredima 5/7/8/9), NE crveno, NE blokirano. Dashboard nakon toga i dalje
+ispravno prikazuje 19 nastavnika.
+
+**Status:** implementirano, testirano (round-trip PROŠAO za oba slučaja —
+sa i bez polja, pun end-to-end sa žutim upozorenjem potvrđen uživo),
+solver.py/validators.py potvrđeno NISU dalje mijenjani u ovom dijelu
+(git diff pokazuje samo ono što je već bilo prisutno prije ovog rada).
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

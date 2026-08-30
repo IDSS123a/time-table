@@ -18,8 +18,11 @@ def validate_config(config):
     D=config["days"]; P=config["periods"]; GR=config["grades"]
     MORNING=set(config["morning_periods"]); NACHP=set(config["nach_periods"])
     CORE=set(config["morning_core_subjects"]); BLOCK=config["block_subjects"]
+    CORE_HARD_GRADES=set(config.get("morning_core_hard_grades", config.get("grades", [])))
     CORE_BY_GRADE=config.get("morning_core_by_grade", {})
-    def is_core(subj, grade): return subj in CORE or grade in CORE_BY_GRADE.get(subj, [])
+    def is_core(subj, grade):
+        if subj in CORE: return grade in CORE_HARD_GRADES
+        return grade in CORE_BY_GRADE.get(subj, [])
     HR=config["homeroom"]; HRD=config["homeroom_daily_grades"]
     TC=config.get("teacher_constraints", {})
     total_slots=len(D)*len(P)
@@ -139,8 +142,11 @@ def validate_config(config):
 def validate(lessons, config):
     D=config["days"]; P=config["periods"]; GR=config["grades"]
     CORE=set(config["morning_core_subjects"]); MORNING=set(config["morning_periods"]); NACHP=set(config["nach_periods"])
+    CORE_HARD_GRADES=set(config.get("morning_core_hard_grades", config.get("grades", [])))
     CORE_BY_GRADE=config.get("morning_core_by_grade", {})
-    def is_core(subj, grade): return subj in CORE or grade in CORE_BY_GRADE.get(subj, [])
+    def is_core(subj, grade):
+        if subj in CORE: return grade in CORE_HARD_GRADES
+        return grade in CORE_BY_GRADE.get(subj, [])
     BLOCK=config["block_subjects"]; HR={int(k):v for k,v in config["homeroom"].items()}; HRD=set(config["homeroom_daily_grades"])
     def is_block(s,g): return s in BLOCK and g in BLOCK[s]
     errs=[]
@@ -204,3 +210,25 @@ def validate(lessons, config):
         for d in D:
             if d not in dw: errs.append(f"Razrednik razreda {g} ({HR[g]}) nema čas u {d}")
     return errs
+
+def validate_warnings(lessons, config):
+    """Direktorova odluka (2026-08-30): Mathematik/Deutsch MORAJU ujutru za
+    razrede u `morning_core_hard_grades` (zadano: SVI razredi, radi
+    kompatibilnosti sa starijim configovima) — to ostaje TVRDO pravilo,
+    provjerava se u validate() iznad. Za SVE OSTALE razrede, isto odstupanje
+    nije greška — samo UPOZORENJE, informativno, NE blokira niti utiče na
+    'ok' status. Stvaran razlog: honorarni nastavnici (npr. Haris Hamzić)
+    nisu uvijek dostupni ujutru za starije razrede — nametanje tvrdog
+    pravila tamo bi bilo nerealno. Ova funkcija se NAMJERNO ne poziva iz
+    /validate-move (ručno prevlačenje) — upozorenja se prikazuju samo uz
+    /solve rezultat, ne mijenjaju da li se ručno pomjeranje prihvata."""
+    CORE=set(config["morning_core_subjects"]); MORNING=set(config["morning_periods"])
+    CORE_HARD_GRADES=set(config.get("morning_core_hard_grades", config.get("grades", [])))
+    warnings=[]
+    for L in lessons:
+        if L["subj"] in CORE and L["grade"] not in CORE_HARD_GRADES and L["period"] not in MORNING:
+            warnings.append(
+                f"{L['subj']} razred {L['grade']} van jutarnjih perioda ({L['day']}{L['period']}) "
+                f"— dozvoljeno za ovaj razred, samo napomena."
+            )
+    return warnings

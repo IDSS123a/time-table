@@ -5,6 +5,25 @@
 > prati ono što je dogovoreno a još nije urađeno, da se ništa ne izgubi.
 > Kad se stavka završi i potvrdi, označi je [x] i dodaj datum.
 
+## Sprint 14 — Meko upozorenje 5.–9. razred, Mathematik/Deutsch (2026-08-30)
+
+- [x] Jezgro (solver.py `morning_core_hard_grades`, validators.py
+      `validate_warnings`) — već izmijenjeno/testirano prije ovog dijela,
+      potvrđeno da NIJE dalje mijenjano (2026-08-30)
+- [x] main.py: `/solve` vraća `warnings` odvojeno od `errors`, `ok` zavisi
+      samo od `errors` (2026-08-30)
+- [x] Frontend: `VerdictModal` novi `kind:"warning"` (žuta, ne crvena),
+      ne auto-nestaje (2026-08-30)
+- [x] `morning_core_hard_grades: [1,2,3,4]` zadano u OBA
+      idss_config.example.json (2026-08-30)
+- [x] **E-14 KRITIČNO — round-trip test PROŠAO** (učitaj→sačuvaj→uporedi,
+      i sa i bez polja u config-u) + puna UI kontrola (chip-lista) u
+      Wizard.jsx, ne samo "preživi kroz Napredno" — vidi DECISION_LOG.md
+      DL-010 (2026-08-30)
+- [x] Pun end-to-end test sa stvarnim IDSS podacima — žuto upozorenje
+      prikazano ispravno, generisanje nije blokirano, dashboard i dalje
+      radi (2026-08-30)
+
 ## Sprint 12 — Čuvanje rasporeda, Supabase (2026-08-30)
 
 - [x] `backend/storage.py` (nov modul) + 3 nova endpointa u main.py

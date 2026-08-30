@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 from solver import solve_timetable_best_of, _dashboard_gap_score
-from validators import validate, validate_config
+from validators import validate, validate_config, validate_warnings
 from exports import export_excel, export_report
 from storage import save_schedule, list_schedules, get_schedule, StorageNotConfigured, StorageError
 
@@ -165,7 +165,12 @@ def solve(body: SolveBody):
                    f"{res['status']}) — pokušaj s dužim vremenskim limitom.")
         return {"ok": False, "status": res["status"], "lessons": [], "errors": [msg]}
     errs = validate(res["lessons"], body.config)
-    return {"ok": len(errs) == 0, "status": res["status"], "lessons": res["lessons"], "errors": errs}
+    # SPRINT 14: upozorenja su ODVOJENA od grešaka — "ok" zavisi ISKLJUČIVO
+    # od errs (Direktorov zahtjev: "upozorava ali ne sprječava"). Namjerno
+    # NEMA try/except ovdje — validate_warnings je čista, jednostavna funkcija
+    # (isti standard poziva kao validate() iznad, koja takođe nema).
+    warns = validate_warnings(res["lessons"], body.config)
+    return {"ok": len(errs) == 0, "status": res["status"], "lessons": res["lessons"], "errors": errs, "warnings": warns}
 
 @app.post("/validate-move", dependencies=[Depends(require_auth)])
 def validate_move(body: MoveBody):
