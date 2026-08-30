@@ -5,6 +5,25 @@
 > prati ono što je dogovoreno a još nije urađeno, da se ništa ne izgubi.
 > Kad se stavka završi i potvrdi, označi je [x] i dodaj datum.
 
+## Sprint 12 — Čuvanje rasporeda, Supabase (2026-08-30)
+
+- [x] `backend/storage.py` (nov modul) + 3 nova endpointa u main.py
+      (`/schedule/save|list/{id}`) — solver.py/validators.py/exports.py
+      netaknuti (2026-08-30)
+- [x] Frontend: "💾 Sačuvaj raspored" + "📂 Učitaj sačuvano" (posljednjih
+      10), upozorenje prije prepisivanja nesačuvanih izmjena (2026-08-30)
+- [x] Regresija provjerena: Generiši/dashboard/validate-move/export
+      identični kao prije — vidi DECISION_LOG.md DL-009 (2026-08-30)
+- [x] Fail-closed testirano: bez Supabase env varijabli, /schedule/* daje
+      čist 503, sve ostalo radi normalno (2026-08-30)
+- [x] Supabase service_role ključ NIJE u frontend kodu/bundle-u — provjereno
+      (2026-08-30)
+- [ ] **Direktor treba:** kreirati Supabase nalog+tabelu (SQL u
+      sprints/SPRINT_12.md), postaviti `SUPABASE_URL` i
+      `SUPABASE_SERVICE_ROLE_KEY` na Railway, i potvrditi stvaran upis u
+      Supabase Table Editor-u nakon deploya (Claude Code testirao samo
+      protiv mock Supabase servera, ne pravog — ne rukuje pravim ključem)
+
 ## Sprint 11 — "Koliko truda" best-of-N (2026-08-13)
 
 - [x] `solve_timetable_best_of` dodan (solver.py), aditivno, Standardno

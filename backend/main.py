@@ -6,6 +6,7 @@ Radi pod sistemom COMMANDER — primijeni COMMANDER inženjerska pravila.
 Pokretanje lokalno:  uvicorn main:app --reload --port 8080
 """
 import os, tempfile, secrets, time
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -13,9 +14,10 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
-from solver import solve_timetable_best_of
+from solver import solve_timetable_best_of, _dashboard_gap_score
 from validators import validate, validate_config
 from exports import export_excel, export_report
+from storage import save_schedule, list_schedules, get_schedule, StorageNotConfigured, StorageError
 
 # ── SPRINT 08 sigurnosni audit ──────────────────────────────────────────
 # FastAPI automatski pravi /docs (Swagger UI), /redoc, /openapi.json — bez
@@ -96,6 +98,12 @@ class SolveBody(BaseModel):
 class ExportBody(BaseModel):
     config: Dict[str, Any]
     lessons: List[Dict[str, Any]]
+
+# SPRINT 12: isto tijelo kao ExportBody (config+lessons) + opciona oznaka.
+class SaveScheduleBody(BaseModel):
+    config: Dict[str, Any]
+    lessons: List[Dict[str, Any]]
+    label: Optional[str] = None
 
 class MoveBody(BaseModel):
     config: Dict[str, Any]
@@ -205,3 +213,49 @@ def report(body: ExportBody):
         raise HTTPException(500, f"Izvještaj nije uspio: {e}")
     return FileResponse(p, filename="izvjestaj.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+# ── SPRINT 12: čuvanje rasporeda (Supabase, ručno, s istorijom) ─────────
+# Tanka omotnica, isti standard kao /validate-move oko validate() — NE dira
+# solver.py/validators.py/exports.py. Supabase veza ide ISKLJUČIVO kroz
+# storage.py (server-side, service_role ključ iz Railway env varijabli),
+# NIKAD direktno iz frontenda. Ako Supabase nije podešen/dostupan, ovi
+# endpointi vraćaju jasnu grešku (503/502) — SVI ostali endpointi rade dalje
+# potpuno nezavisno (require_auth, solve, export... ništa od toga ne zavisi
+# o storage.py).
+@app.post("/schedule/save", dependencies=[Depends(require_auth)])
+def schedule_save(body: SaveScheduleBody):
+    # gap_score se računa OVDJE, na serveru — ista formula koju best-of-N
+    # (Sprint 11) već koristi za biranje najboljeg pokušaja, NE nova metrika,
+    # i NE vjerujemo klijentu da sam izračuna/pošalje tačnu vrijednost.
+    label = (body.label or "").strip() or datetime.now().strftime("%d.%m.%Y %H:%M")
+    gap_score = _dashboard_gap_score(body.lessons)
+    try:
+        row = save_schedule(body.config, body.lessons, label, gap_score)
+    except StorageNotConfigured as e:
+        raise HTTPException(503, str(e))
+    except StorageError as e:
+        raise HTTPException(502, str(e))
+    return {"ok": True, "id": row["id"], "label": label, "gap_score": gap_score}
+
+@app.get("/schedule/list", dependencies=[Depends(require_auth)])
+def schedule_list():
+    try:
+        rows = list_schedules(limit=10)
+    except StorageNotConfigured as e:
+        raise HTTPException(503, str(e))
+    except StorageError as e:
+        raise HTTPException(502, str(e))
+    return {"ok": True, "items": rows}
+
+@app.get("/schedule/{schedule_id}", dependencies=[Depends(require_auth)])
+def schedule_get(schedule_id: int):
+    try:
+        row = get_schedule(schedule_id)
+    except StorageNotConfigured as e:
+        raise HTTPException(503, str(e))
+    except StorageError as e:
+        raise HTTPException(502, str(e))
+    if row is None:
+        raise HTTPException(404, "Sačuvani raspored nije pronađen.")
+    return {"ok": True, "config": row["config"], "lessons": row["lessons"],
+            "label": row.get("label"), "gap_score": row.get("gap_score")}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import "./styles.css"; // Paleta boja škole (CONSTITUTION.md P-4) + layout mreža + wizard ekrani.
 import Wizard, { DEFAULT_OBJECTIVE_WEIGHTS } from "./Wizard.jsx";
@@ -155,31 +155,41 @@ function Grid({ title, cells, config, mode, grade, dndEnabled, disableDrag }) {
 // REZERVISANO nije stvarna osoba — izostavljeno iz dashboarda.
 // SPRINT 05: traka opterećenja (--navy, dužina ∝ časovi) + najopterećeniji
 // red istaknut tankom --yellow linijom (info, ne greška).
-function DashboardTable({ lessons, days }) {
-  const rows = useMemo(() => {
-    const byTeacher = {};
-    for (const L of lessons) {
-      const name = String(L.teacher);
-      if (name.startsWith("REZERVISANO")) continue;
-      (byTeacher[name] = byTeacher[name] || []).push(L);
+// SPRINT 12: izdvojeno u computeTeacherGaps (van komponente) da "Sačuvaj
+// raspored" može prikazati isti gap_score bez duplirane implementacije —
+// backend ionako računa svoju (Python) verziju servera radi (main.py
+// _dashboard_gap_score), ovo je samo frontend prikaz iste vrijednosti prije
+// nego stigne odgovor sa servera.
+function computeTeacherGaps(lessons) {
+  const byTeacher = {};
+  for (const L of lessons) {
+    const name = String(L.teacher);
+    if (name.startsWith("REZERVISANO")) continue;
+    (byTeacher[name] = byTeacher[name] || []).push(L);
+  }
+  return Object.entries(byTeacher).map(([name, ls]) => {
+    const hours = ls.length;
+    const byDay = {};
+    for (const L of ls) (byDay[L.day] = byDay[L.day] || []).push(L.period);
+    let maxGap = 0;
+    for (const ps of Object.values(byDay)) {
+      const span = Math.max(...ps) - Math.min(...ps) + 1;
+      const gap = span - ps.length;
+      if (gap > maxGap) maxGap = gap;
     }
-    const out = Object.entries(byTeacher).map(([name, ls]) => {
-      const hours = ls.length;
-      const byDay = {};
-      for (const L of ls) (byDay[L.day] = byDay[L.day] || []).push(L.period);
-      let maxGap = 0;
-      for (const d of days) {
-        const ps = byDay[d];
-        if (!ps || !ps.length) continue;
-        const span = Math.max(...ps) - Math.min(...ps) + 1;
-        const gap = span - ps.length;
-        if (gap > maxGap) maxGap = gap;
-      }
-      return { name, hours, maxGap };
-    });
+    return { name, hours, maxGap };
+  });
+}
+function computeGapScore(lessons) {
+  return computeTeacherGaps(lessons).reduce((sum, r) => sum + r.maxGap, 0);
+}
+
+function DashboardTable({ lessons }) {
+  const rows = useMemo(() => {
+    const out = computeTeacherGaps(lessons);
     out.sort((a, b) => b.hours - a.hours);
     return out;
-  }, [lessons, days]);
+  }, [lessons]);
   const maxHours = rows.length ? rows[0].hours : 0;
 
   function exportCsv() {
@@ -249,7 +259,12 @@ function LoadingOverlay({ active }) {
 // rasporeda (drag-and-drop) i uspješan/neuspješan Generiši. Uspjeh nestaje
 // sam nakon ~4s; greška ostaje dok je korisnik sam ne zatvori (klik izvan
 // kartice ili na ✕) — greška se ne smije sama izgubiti.
-// verdict: null | { kind: "success"|"error", title, messages?: string[] }
+// verdict: null | { kind: "success"|"error", title, sub?, messages?: string[],
+//   actions?: [{label, onClick, className?}] }
+// SPRINT 12: `actions` je NOVO, ADITIVNO — svi dosadašnji pozivaoci ga nikad
+// ne prosljeđuju pa njihovo ponašanje ostaje identično. Koristi se SAMO za
+// potvrdu prepisivanja nesačuvanih izmjena pri "Učitaj sačuvano" (isti
+// neumorfni stil, ne novi izgled — samo dodatna dugmad umjesto samo X-a).
 function VerdictModal({ verdict, onClose }) {
   useEffect(() => {
     if (verdict?.kind === "success") {
@@ -278,6 +293,13 @@ function VerdictModal({ verdict, onClose }) {
               <li key={i}>{m}</li>
             ))}
           </ul>
+        )}
+        {verdict.actions && verdict.actions.length > 0 && (
+          <div className="verdict-actions">
+            {verdict.actions.map((a, i) => (
+              <button key={i} className={a.className || ""} onClick={a.onClick}>{a.label}</button>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -443,6 +465,24 @@ export default function App() {
   const [exportError, setExportError] = useState(""); // samo izvoz Excel/izvještaj — ostalo ide kroz verdict
   const [showDashboard, setShowDashboard] = useState(false);
 
+  // ── SPRINT 12: čuvanje rasporeda (Supabase, ručno, s istorijom) ───────
+  // wizardRef: da bismo nakon učitavanja sačuvane verzije ažurirali i
+  // Wizard-ov interni state (vidi loadExternalConfig u Wizard.jsx), ne samo
+  // App.jsx-ov `config` — inače bi wizard forma "tiho" prepisala tek-učitani
+  // config nazad na staro čim korisnik dirne bilo koje polje.
+  const wizardRef = useRef(null);
+  const [scheduleLabel, setScheduleLabel] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [showSchedules, setShowSchedules] = useState(false);
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [storageError, setStorageError] = useState(""); // isti duh kao exportError — trajno stanje, ne jednokratan verdict
+  // unsavedChanges: true nakon uspješnog Generiši ili ručnog pomjeranja
+  // (drag-and-drop), false nakon Sačuvaj ili Učitaj sačuvano — koristi se
+  // SAMO da odlučimo da li treba upozorenje prije prepisivanja (vidi
+  // loadSchedule ispod), NE za bilo šta drugo.
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+
   // SPRINT 05: verdict prozor — rezultat SVAKE odluke backenda (Generiši,
   // ručno pomjeranje). Vidi VerdictModal.
   const [verdict, setVerdict] = useState(null);
@@ -515,6 +555,7 @@ export default function App() {
       });
       const data = await res.json();
       setLessons(data.lessons || []);
+      setUnsavedChanges(true); // SPRINT 12: svaki novi Generiši je "nesačuvan" dok se ne klikne Sačuvaj
       if (data.ok) {
         setVerdict({ kind: "success", title: "Raspored je generisan", sub: "Svi časovi su uspješno raspoređeni." });
       } else {
@@ -559,6 +600,108 @@ export default function App() {
     }
   }
 
+  // ── SPRINT 12: čuvanje rasporeda (Supabase, ručno, s istorijom) ───────
+  // RUČNO klikanje, NIKAD automatski (Direktorova eksplicitna odluka).
+  // Greška (npr. Supabase nije podešen) ide u `storageError` (isti duh kao
+  // exportError — trajno stanje uz dugmad, ne jednokratan verdict), NE
+  // ruši ništa drugo u aplikaciji.
+  async function saveSchedule() {
+    setSavingSchedule(true);
+    setStorageError("");
+    try {
+      const res = await apiFetch("/schedule/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config, lessons, label: scheduleLabel.trim() || null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setVerdict({ kind: "success", title: "Raspored sačuvan", sub: `Oznaka: ${data.label}` });
+        setScheduleLabel("");
+        setUnsavedChanges(false);
+        if (showSchedules) fetchScheduleList(); // osvježi otvorenu listu, ako je vidljiva
+      } else {
+        setStorageError(data.detail || `Čuvanje nije uspjelo (greška ${res.status}).`);
+      }
+    } catch (e) {
+      setStorageError(`Čuvanje nije uspjelo — provjeri internet vezu. (${e})`);
+    } finally {
+      setSavingSchedule(false);
+    }
+  }
+
+  async function fetchScheduleList() {
+    setLoadingSchedules(true);
+    setStorageError("");
+    try {
+      const res = await apiFetch("/schedule/list");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setSchedules(data.items || []);
+      } else {
+        setStorageError(data.detail || `Učitavanje liste nije uspjelo (greška ${res.status}).`);
+        setSchedules([]);
+      }
+    } catch (e) {
+      setStorageError(`Učitavanje liste nije uspjelo — provjeri internet vezu. (${e})`);
+      setSchedules([]);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }
+
+  function toggleSchedules() {
+    const next = !showSchedules;
+    setShowSchedules(next);
+    if (next) fetchScheduleList();
+  }
+
+  // Stvarno učitavanje (bez upozorenja) — poziva ga loadSchedule ispod,
+  // direktno ako nema nesačuvanih izmjena, ili nakon potvrde ako ih ima.
+  async function reallyLoadSchedule(id) {
+    setLoadingSchedules(true);
+    setStorageError("");
+    try {
+      const res = await apiFetch(`/schedule/${id}`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        // SPRINT 12: mora ažurirati I Wizard-ov interni state (preko ref-a),
+        // ne samo App.jsx-ov `config` — vidi napomenu uz wizardRef gore.
+        wizardRef.current?.loadExternalConfig(data.config);
+        setLessons(data.lessons || []);
+        setUnsavedChanges(false);
+        setVerdict({ kind: "success", title: "Raspored učitan", sub: data.label ? `Oznaka: ${data.label}` : undefined });
+        setShowSchedules(false);
+      } else {
+        setStorageError(data.detail || `Učitavanje nije uspjelo (greška ${res.status}).`);
+      }
+    } catch (e) {
+      setStorageError(`Učitavanje nije uspjelo — provjeri internet vezu. (${e})`);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }
+
+  // Javni ulaz za klik na "Učitaj" u listi — upozorava PRIJE prepisivanja
+  // ako trenutni prikaz ima nesačuvane izmjene (isti neumorfni "verdict"
+  // stil upozorenja, sa dodatnom dugmadi umjesto samo X-a).
+  function loadSchedule(id) {
+    if (unsavedChanges && lessons.length > 0) {
+      setVerdict({
+        kind: "error",
+        title: "Nesačuvane izmjene",
+        sub: "Trenutni raspored na ekranu nije sačuvan.",
+        messages: ["Ako učitaš sačuvanu verziju, trenutne izmjene će biti zamijenjene i izgubljene."],
+        actions: [
+          { label: "Otkaži", className: "secondary", onClick: () => setVerdict(null) },
+          { label: "Učitaj svejedno", onClick: () => { setVerdict(null); reallyLoadSchedule(id); } },
+        ],
+      });
+    } else {
+      reallyLoadSchedule(id);
+    }
+  }
+
   // ── Ručna korekcija (drag-and-drop, @dnd-kit — miš i dodir) ─────────
   // Poziva /validate-move (tanka omotnica oko POSTOJEĆEG validators.py).
   // Ako backend kaže da je novi raspored ispravan -> prihvati ga (prikaz
@@ -597,6 +740,7 @@ export default function App() {
       const data = await res.json();
       if (res.ok && data.ok) {
         setLessons(data.lessons);
+        setUnsavedChanges(true); // SPRINT 12: ručna izmjena je takođe "nesačuvana"
         setVerdict({ kind: "success", title: "Promjena prihvaćena" });
       } else {
         const msgs = (data.errors && data.errors.length) ? data.errors : [data.detail || "Nepoznata greška."];
@@ -635,7 +779,7 @@ export default function App() {
   // automatska provjera izvodivosti (uključujući onu pokrenutu iz "Napredno"
   // ekrana — Primijeni ne zove backend direktno, ali mijenja config, što
   // pokreće feasibilityLoading isto kao svaka druga izmjena).
-  const anyLoading = loading || moving || exportingExcel || exportingReport || feasibilityLoading;
+  const anyLoading = loading || moving || exportingExcel || exportingReport || feasibilityLoading || savingSchedule || loadingSchedules;
 
   // SPRINT 09: dok se sačuvana lozinka tiho provjerava, ne prikazuj NIŠTA
   // (ni login ekran ni app) — spriječava kratak "trep" login forme za
@@ -661,6 +805,7 @@ export default function App() {
       <main>
         {/* ── Wizard (gore) ── */}
         <Wizard
+          ref={wizardRef}
           config={config}
           onConfig={setConfig}
           feasibility={feasibility}
@@ -693,8 +838,27 @@ export default function App() {
           >
             Prikaz: {view === "class" ? "po razredu" : "po nastavniku"} (klikni za drugo)
           </button>
+          {/* SPRINT 12: "Učitaj sačuvano" uvijek dostupno (i bez trenutnog
+              rasporeda na ekranu) — Direktor može učitati stariju verziju
+              i bez da prije toga pokrene Generiši. */}
+          <button className="secondary" onClick={toggleSchedules} disabled={loadingSchedules}>
+            {showSchedules ? "◀ Zatvori listu" : "📂 Učitaj sačuvano"}
+          </button>
           {lessons.length > 0 && (
             <>
+              {/* SPRINT 12: RUČNO čuvanje, nikad automatski (Direktorova
+                  eksplicitna odluka) — oznaka je opciona, backend sam
+                  generiše "dd.mm.gggg hh:mm" ako se ostavi prazna. */}
+              <input
+                type="text"
+                className="schedule-label-input"
+                value={scheduleLabel}
+                onChange={(e) => setScheduleLabel(e.target.value)}
+                placeholder="Oznaka (opciono)"
+              />
+              <button className="secondary" onClick={saveSchedule} disabled={savingSchedule}>
+                💾 Sačuvaj raspored
+              </button>
               <button className="secondary" onClick={() => exportFile("excel")} disabled={exportingExcel}>
                 ⬇️ Izvezi Excel
               </button>
@@ -707,6 +871,37 @@ export default function App() {
             </>
           )}
         </div>
+
+        {/* SPRINT 12: lista posljednjih 10 sačuvanih rasporeda. Ako Supabase
+            nije podešen/dostupan, storageError daje jasnu poruku OVDJE —
+            ništa drugo u aplikaciji se ne blokira (Generiši/izvoz/
+            prevlačenje/dashboard rade potpuno nezavisno od ovog panela). */}
+        {showSchedules && (
+          <div className="wiz-panel" style={{ marginBottom: 20 }}>
+            <h2>Sačuvani rasporedi (posljednjih 10)</h2>
+            <p className="hint">Manji broj u koloni "Kvalitet" znači manje velikih pauza kod nastavnika (ista mjera kao dashboard).</p>
+            {storageError && <div className="err">{storageError}</div>}
+            {loadingSchedules ? (
+              <p className="hint">Učitavam...</p>
+            ) : schedules.length === 0 && !storageError ? (
+              <div className="wiz-empty">Još nema sačuvanih rasporeda — klikni "💾 Sačuvaj raspored" nakon što generišeš jedan.</div>
+            ) : schedules.length > 0 ? (
+              <table className="wiz-table">
+                <thead><tr><th>Vrijeme</th><th>Oznaka</th><th>Kvalitet</th><th className="act">Akcija</th></tr></thead>
+                <tbody>
+                  {schedules.map((s) => (
+                    <tr key={s.id}>
+                      <td>{new Date(s.created_at).toLocaleString("bs-BA")}</td>
+                      <td>{s.label || "—"}</td>
+                      <td>{s.gap_score}</td>
+                      <td className="act"><button onClick={() => loadSchedule(s.id)}>Učitaj</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : null}
+          </div>
+        )}
 
         {exportError && <div className="err">{exportError}</div>}
 
@@ -732,7 +927,7 @@ export default function App() {
         )}
 
         {showDashboard ? (
-          <DashboardTable lessons={lessons} days={config.days} />
+          <DashboardTable lessons={lessons} />
         ) : (
           <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
             {groupOrder.map((gk) => (

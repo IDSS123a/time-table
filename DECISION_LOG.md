@@ -431,6 +431,108 @@ ograničen). Sve reference na "Maksimalno=6" u kodu/komentarima ažurirane.
 Maksimalno=4 pun end-to-end, dashboard i loader potvrđeni uživo), spremno za
 push.
 
+## DL-009 — Sprint 12: čuvanje rasporeda (Supabase, ručno, s istorijom)
+
+**Datum:** 2026-08-30
+**Kontekst:** Direktorovo zapažanje iz stvarne upotrebe — best-of-N (Sprint
+11) bira pokušaj s najmanjim UKUPNIM zbirom rupa, što ne garantuje da je baš
+svaki pojedinačni nastavnik optimalan u toj konkretnoj verziji. Ručno
+generisanje-pregled-čuvanje je razuman odgovor: generiši par puta, sačuvaj
+najbolju verziju za konkretnog nastavnika koji ti je bitan, vrati se na nju
+kasnije.
+
+**Implementacija:**
+- `backend/storage.py` (NOV fajl) — tanka omotnica oko Supabase REST API-ja
+  (PostgREST) preko `requests`, BEZ dodatne `supabase-py` SDK zavisnosti.
+  `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` iz Railway env varijabli,
+  ISKLJUČIVO server-side. `StorageNotConfigured`/`StorageError` — jasne,
+  očekivane greške (main.py ih pretvara u 503/502), NE pad aplikacije.
+- `main.py`: `POST /schedule/save`, `GET /schedule/list`, `GET /schedule/
+  {id}` — sva tri `require_auth` kao i sve ostalo. `gap_score` se računa NA
+  SERVERU pozivom `_dashboard_gap_score` (Sprint 11, solver.py) — ISTA
+  metrika, ne nova, i ne vjerujemo klijentu da je sam izračuna.
+- Frontend: "💾 Sačuvaj raspored" (ručno, s opcionom oznakom — automatski
+  "dd.mm.gggg hh:mm" ako se ostavi prazno) i "📂 Učitaj sačuvano" (lista
+  posljednjih 10, najnoviji prvi). Učitavanje preko nesačuvanih izmjena
+  upozorava kroz POSTOJEĆI VerdictModal (Sprint 05), proširen ADITIVNIM
+  `actions` poljem (dugmad "Otkaži"/"Učitaj svejedno") — svi dosadašnji
+  pozivi VerdictModal-a (bez `actions`) ostaju vizuelno i funkcionalno
+  identični.
+- `Wizard.jsx` dobija `forwardRef`+`useImperativeHandle` (`loadExternalConfig`)
+  — bez ovoga bi učitavanje sačuvane verzije ažuriralo App.jsx-ov `config`
+  ali NE i Wizard-ov interni state, pa bi wizard forma "tiho" prepisala
+  tek-učitani config nazad na staro čim korisnik dirne bilo koje polje.
+  Ista mehanika koju "Učitaj config (.json)" već koristi interno.
+- `DashboardTable` (App.jsx) refaktorisan — `computeTeacherGaps`/
+  `computeGapScore` izdvojeni van komponente, jedan izvor istine za
+  dashboard prikaz I "Sačuvaj raspored" frontend prikaz (backend ipak uvijek
+  računa svoju server-side vrijednost preko `_dashboard_gap_score`, ovo je
+  samo frontend logika, uklanja duplikat unutar App.jsx).
+
+**Sigurnost — Supabase service_role ključ NIKAD u frontendu:**
+provjereno eksplicitno (isti test kao za staru ugrađenu lozinku, Sprint 09):
+`grep` na cijeli `dist/` build i na sav frontend izvorni kod — riječ
+"supabase" se NE POJAVLJUJE NIGDJE u frontend kodu (0 pogodaka u App.jsx/
+Wizard.jsx/main.jsx). Frontend zna SAMO za `/schedule/save`, `/schedule/
+list`, `/schedule/{id}` — generičke rute vlastitog već-zaštićenog backenda,
+nema pojma o Supabase-u ispod haube. Arhitekturalno nemoguće da ključ
+procuri kroz frontend, ne samo "nismo ga stavili".
+
+**Regresijski test (eksplicitan zahtjev prije nastavka):**
+- `git diff --stat backend/solver.py backend/validators.py backend/exports.py`
+  — PRAZNO, potpuno netaknuti (main.py samo UVOZI `_dashboard_gap_score` iz
+  solver.py, ne mijenja ga).
+- Generiši (Standardno): 315 časova, 9 razreda — identično prijašnjim
+  izvještajima.
+- Dashboard: 19 nastavnika, iste vrijednosti kao prije refaktora
+  (computeTeacherGaps potvrđeno ekvivalentan staroj inline verziji).
+- `/validate-move`: testirano direktno na backendu sa stvarnim podacima
+  (315 časova, round-trip kroz novi Save) — 200, ok:true, bez grešaka.
+  Frontend `handleDragEnd` dobio samo JEDNU dodatu liniju
+  (`setUnsavedChanges(true)` u success grani) — ne mijenja API poziv niti
+  kontrolni tok.
+- `/export/excel`: 200 OK, radi identično i BEZ Supabase env varijabli.
+- Login: nepromijenjen ovim sprintom, testiran implicitno kroz sve gornje
+  (prijava radila normalno tokom cijelog testiranja).
+
+**Fail-closed test (eksplicitan zahtjev — "ne bi pukla kad bi Supabase
+varijable nedostajale"):** backend pokrenut BEZ `SUPABASE_URL`/
+`SUPABASE_SERVICE_ROLE_KEY`. Rezultat:
+- `POST /schedule/save`, `GET /schedule/list`, `GET /schedule/{id}` → sva
+  tri čist **503** sa jasnom porukom ("Čuvanje rasporeda nije podešeno na
+  serveru...").
+- `/health`, `/feasibility`, `/export/excel` i dalje **200**, rade potpuno
+  normalno — potvrđeno da ništa drugo ne zavisi o storage.py.
+
+**Testirano PROTIV mock Supabase servera** (lokalni FastAPI koji simulira
+PostgREST, ne pravi Supabase — Claude Code ne rukuje pravim service_role
+ključem, isti standard kao za BACKEND_PASSWORD): stvaran upis potvrđen
+direktnim čitanjem mock baze (ne samo "frontend kaže sačuvano"), lista
+vraća tačno redoslijed (najnoviji prvi), učitavanje vraća pun config+lessons
+i ispravno sinhronizuje i App.jsx i Wizard.jsx state, upozorenje o
+nesačuvanim izmjenama prikazano i testirano na oba puta (Otkaži i Učitaj
+svejedno).
+
+**Preostalo — Direktorova radnja (Claude Code ne rukuje pravim Supabase
+kredencijalima):**
+1. Kreirati Supabase nalog (besplatan nivo) i projekat.
+2. U Supabase SQL editoru pokrenuti (vidi sprints/SPRINT_12.md HANDOFF za
+   tačan SQL) da se napravi `saved_schedules` tabela.
+3. Na Railway (isti obrazac kao `BACKEND_PASSWORD`) postaviti DVIJE env
+   varijable: `SUPABASE_URL` i `SUPABASE_SERVICE_ROLE_KEY` (TAČNO ta imena,
+   backend ih čita po tim nazivima — vidi storage.py).
+4. Nakon deploya, provjeriti da "💾 Sačuvaj raspored" stvarno upisuje red u
+   Supabase tabelu (Direktor može provjeriti direktno u Supabase Table
+   Editor-u) — Claude Code ovo nije mogao testirati protiv PRAVOG Supabase-a
+   bez pravih kredencijala.
+
+**Otvoren rizik (Supabase besplatan nivo):** projekat na besplatnom Supabase
+nivou se automatski PAUZIRA nakon ~1 sedmicu neaktivnosti (Supabase pravilo,
+ne nešto što mi kontrolišemo) — ako se "Sačuvaj"/"Učitaj" ne koristi duže
+vrijeme, prvi sljedeći poziv može dobiti grešku dok se projekat ne "probudi"
+(obično par sekundi do minute). Nije blokirajuće, ali vrijedi znati ako se
+pojavi privremena greška nakon duže pauze u korištenju.
+
 ## Napomena uz DL-001 (2026-08, nakon pitanja Direktora)
 
 Direktor ne treba Docker instaliran lokalno. Cloud Run / Railway sami

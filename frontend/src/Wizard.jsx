@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 
 // SPRINT 11: jedini izvor istine za zadane objective_weights — App.jsx uvozi
 // ovo za svoj početni config skelet umjesto da drži IDENTIČNU vrijednost
@@ -255,13 +255,31 @@ function Field({ label, children }) {
   );
 }
 
-export default function Wizard({ config, onConfig, feasibility, feasibilityLoading }) {
+// SPRINT 12: forwardRef + useImperativeHandle — App.jsx ("Učitaj sačuvano",
+// van Wizard-a) treba da NAKON preuzimanja sačuvanog config-a sa backenda
+// ažurira i Wizard-ov INTERNI `w` state, ne samo App.jsx-ov `config` (isti
+// round-trip koji "Učitaj config (.json)" ispod već radi — setW + onConfig
+// zajedno). Bez ovoga bi wizard forma ostala "zaglavljena" na starim
+// vrijednostima dok korisnik ne dirne bilo koje polje, koje bi onda TIHO
+// prepisalo tek-učitani config nazad na stari wizard state.
+const Wizard = forwardRef(function Wizard({ config, onConfig, feasibility, feasibilityLoading }, ref) {
   // Wizard interno drži editor-friendly state; App.jsx dobija config via buildConfig.
   // Inicijalno: prazno stanje (NE fiksni IDSS primjer — Sprint 02 kriterij).
   const [w, setW] = useState(() => emptyWizard());
   const [step, setStep] = useState(0); // 0=A, 1=B, 2=C, 3=D, 4=Provjera, 5=Napredno
   const fileRef = useRef(null);
   const ADVANCED_STEP = 5;
+
+  // SPRINT 12: isti round-trip kao loadConfigFile ispod (setW + onConfig +
+  // vrati na korak A), samo pozvan izvana (App.jsx) umjesto iz file input-a.
+  useImperativeHandle(ref, () => ({
+    loadExternalConfig(cfg) {
+      const loaded = loadConfig(cfg);
+      setW(loaded);
+      onConfig(buildConfig(loaded));
+      setStep(0);
+    },
+  }));
 
   // ── SPRINT 04, stavka 5: "Napredno" — ručno uređivanje sirovog config JSON-a.
   // Rješava ponavljajući problem: svako NOVO polje koje backend dobije (npr.
@@ -823,4 +841,6 @@ export default function Wizard({ config, onConfig, feasibility, feasibilityLoadi
       </div>
     </div>
   );
-}
+});
+
+export default Wizard;
