@@ -122,7 +122,7 @@ def _feasibility(config: Dict[str, Any]) -> List[str]:
     except Exception as e:
         return [f"Neočekivana greška prilikom provjere konfiguracije: {e}"]
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"ok": True}
 
